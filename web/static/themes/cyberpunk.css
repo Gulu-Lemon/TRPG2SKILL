@@ -1,0 +1,187 @@
+/* TRPG-to-SKILL — 赛博朋克主题 (霓虹、终端美学) */
+:root {
+    --bg: #0a0a0f;
+    --bg2: #0f0f1a;
+    --bg3: rgba(0, 255, 136, 0.08);
+    --accent: #00ff88;
+    --accent2: rgba(0, 255, 136, 0.2);
+    --text: #c8ffc8;
+    --text2: #5a8a5a;
+    --green: #00ff88;
+    --yellow: #ffaa00;
+    --red: #ff3366;
+    --panel-bg: #050510;
+    --border: rgba(0, 255, 136, 0.1);
+    --font: 'Consolas', 'Courier New', monospace;
+    --overlay-bg: rgba(0,0,0,0.7);
+    --loading-bg: rgba(5,5,16,0.95);
+    --btn-text: #0a0a0f;
+    --danger-hover: #ff1744;
+}
+
+/* ── CRT 扫描线 ── */
+body {
+    background: var(--bg);
+    box-shadow: inset 0 0 120px rgba(0,255,136,0.03);
+}
+body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+    background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
+    );
+}
+
+/* ── 霓虹顶栏 ── */
+#topbar {
+    background: rgba(10,10,15,0.95);
+    border-bottom: 1px solid rgba(0,255,136,0.2);
+    box-shadow: 0 0 20px rgba(0,255,136,0.05);
+}
+#topbar .logo {
+    color: var(--accent);
+    text-shadow: 0 0 10px rgba(0,255,136,0.5);
+    font-family: var(--font);
+    letter-spacing: 2px;
+}
+#topbar .tab-btn {
+    color: var(--text2); font-family: var(--font);
+    border: 1px solid transparent; border-radius: 2px;
+    transition: color 0.2s, border-color 0.2s, text-shadow 0.2s;
+}
+#topbar .tab-btn:hover { color: var(--accent); }
+#topbar .tab-btn.active {
+    background: rgba(0,255,136,0.08);
+    color: var(--accent);
+    border-color: rgba(0,255,136,0.3);
+    text-shadow: 0 0 6px rgba(0,255,136,0.5);
+}
+
+/* ── 面板 ── */
+.settings-section {
+    background: rgba(15,15,26,0.8);
+    border: 1px solid rgba(0,255,136,0.15);
+    border-left: 3px solid var(--accent);
+    box-shadow: 0 0 20px rgba(0,255,136,0.03), inset 0 0 40px rgba(0,255,136,0.02);
+}
+.settings-section h3 {
+    color: var(--accent);
+    font-family: var(--font);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 8px rgba(0,255,136,0.3);
+    border-bottom-color: rgba(0,255,136,0.15);
+}
+
+/* ── 霓虹输入框 ── */
+#compile-input, #player-input, #compile-name, .profile-form input {
+    background: rgba(0,0,0,0.6);
+    color: var(--text);
+    border: 1px solid rgba(0,255,136,0.2);
+    border-radius: 2px;
+    font-family: var(--font);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+#player-input:focus, #compile-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(0,255,136,0.2), inset 0 0 12px rgba(0,255,136,0.05);
+    outline: none;
+}
+
+/* ── 霓虹按钮 ── */
+.btn-icon {
+    background: rgba(0,255,136,0.08);
+    color: var(--accent);
+    border: 1px solid rgba(0,255,136,0.2);
+    border-radius: 2px;
+    font-family: var(--font);
+    transition: background 0.2s, box-shadow 0.2s;
+}
+.btn-icon:hover {
+    background: rgba(0,255,136,0.15);
+    box-shadow: 0 0 12px rgba(0,255,136,0.3);
+}
+
+#compile-submit, #send-btn {
+    background: rgba(0,255,136,0.15);
+    color: var(--accent);
+    border: 1px solid rgba(0,255,136,0.4);
+    box-shadow: 0 0 16px rgba(0,255,136,0.2);
+    font-family: var(--font);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+#compile-submit:hover, #send-btn:hover {
+    background: rgba(0,255,136,0.25);
+    box-shadow: 0 0 24px rgba(0,255,136,0.4);
+}
+
+/* ── Lorebook ── */
+.lorebook-entry {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(0,255,136,0.08);
+    border-radius: 2px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.lorebook-entry:hover {
+    border-color: rgba(0,255,136,0.3);
+    box-shadow: 0 0 8px rgba(0,255,136,0.1);
+}
+.lorebook-entry .le-title { color: var(--accent); font-family: var(--font); }
+
+/* ── 存档 ── */
+.slot-item {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(0,255,136,0.08);
+    border-radius: 2px;
+}
+
+/* ── 抽屉 ── */
+.panel-drawer {
+    background: rgba(10,10,15,0.97);
+    border-left: 1px solid rgba(0,255,136,0.25);
+    box-shadow: -4px 0 40px rgba(0,255,136,0.05);
+}
+
+/* ── 进度条 ── */
+#progress-bar {
+    box-shadow: 0 0 16px rgba(0,255,136,0.6);
+}
+
+/* ── 加载 ── */
+#loading-overlay .spinner {
+    border-color: rgba(0,255,136,0.1);
+    border-top-color: var(--accent);
+    box-shadow: 0 0 12px rgba(0,255,136,0.3);
+}
+
+/* ── 输入行 ── */
+#input-row {
+    background: rgba(10,10,15,0.9);
+    border-top: 1px solid rgba(0,255,136,0.2);
+}
+
+/* ── 配置行 ── */
+.config-row { border-bottom: 1px solid rgba(0,255,136,0.08); }
+.config-row label { color: var(--text2); font-family: var(--font); }
+
+/* ── 主题按钮 ── */
+.theme-option {
+    border-color: rgba(0,255,136,0.15); border-radius: 2px;
+    font-family: var(--font); color: var(--text2);
+}
+.theme-option:hover { border-color: var(--accent); box-shadow: 0 0 8px rgba(0,255,136,0.15); }
+.theme-option.active {
+    background: rgba(0,255,136,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 12px rgba(0,255,136,0.3);
+}
+
+/* ── 游戏信息 ── */
+#play-header .game-name { color: var(--accent); font-family: var(--font); }
+.system-msg { background: rgba(0,255,136,0.05); border-left: 2px solid rgba(0,255,136,0.2); }
+
+/* ── 页眉 ── */
+#play-header { border-bottom: 1px solid rgba(0,255,136,0.15); }

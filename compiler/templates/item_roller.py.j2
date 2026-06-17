@@ -1,0 +1,26 @@
+"""
+item_roller.py — 随机物品/道具选择器
+
+用法:
+    python tools/item_roller.py --random
+"""
+import sys
+import json
+import random
+
+_rng = random.SystemRandom()
+
+ITEMS = [
+{% for item in tool.data_pools %}
+    "{{ item }}",
+{% endfor %}
+]
+
+def main():
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+    result = _rng.choice(ITEMS) if ITEMS else "普通物品"
+    print(json.dumps({"item": result}, ensure_ascii=False))
+
+if __name__ == "__main__":
+    main()

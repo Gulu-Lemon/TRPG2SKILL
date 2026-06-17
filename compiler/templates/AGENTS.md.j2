@@ -1,0 +1,16 @@
+# AGENTS.md — 《{{ spec.frontmatter.name }}》核心规则
+
+每次游戏启动时自动读取。仅包含强制执行规则——不包含游戏状态。
+
+---
+
+## 绝对禁令
+
+{% for rule in spec.agents_md_rules %}
+### {{ rule.title }}
+> {{ rule.text }}
+
+{% endfor %}
+
+---
+*由 TRPG-to-SKILL 自动生成于 {{ spec.generated_at }}*

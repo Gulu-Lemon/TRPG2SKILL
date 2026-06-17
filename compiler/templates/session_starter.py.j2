@@ -1,0 +1,40 @@
+"""
+session_starter.py — 新游戏初始化
+"""
+import sys
+import json
+import time
+import os
+
+SAVES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "saves")
+AUTOSAVE = os.path.join(SAVES_DIR, "autosave.json")
+
+DEFAULT_STATE = {
+    "turn": 1,
+    "day": 1,
+    "phase": "{{ spec.phases[0].name if spec.phases|length > 0 else 'MAIN' }}",
+    "player_location": "起始地点",
+    "player_name": "你",
+    "custom": {},
+    "npcs": {},
+    "inventory": [],
+    "active_events": [],
+    "flags": [],
+    "summaries": [],
+    "lorebook_state": {},
+    "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+    "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+    "history": [],
+}
+
+def main():
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+    os.makedirs(SAVES_DIR, exist_ok=True)
+    state = dict(DEFAULT_STATE)
+    with open(AUTOSAVE, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+    print(json.dumps({"ok": True, "autosave": AUTOSAVE, "state": state}, ensure_ascii=False))
+
+if __name__ == "__main__":
+    main()

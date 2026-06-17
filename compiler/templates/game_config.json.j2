@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "game_name": "{{ spec.frontmatter.name }}",
+  
+  "lorebook": {
+    "max_injection_tokens": 3000,
+    "default_scan_depth": 5,
+    "recursive_depth": 1,
+    "single_char_penalty": 0.3
+  },
+  
+  "memory": {
+    "recent_window_rounds": 15,
+    "summary_interval_rounds": 30,
+    "max_summary_entries": 5
+  },
+  
+  "narrative": {
+    "temperature": 0.9,
+    "max_tokens": 0
+  },
+  
+  "protocol_guard": {
+    "enabled": true,
+    "check_interval_rounds": 5,
+    "review_window_rounds": 5
+  },
+  
+  "debug": {
+    "show_token_usage": false,
+    "show_lorebook_hits": false
+  }
+}

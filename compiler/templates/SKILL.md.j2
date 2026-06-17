@@ -1,0 +1,52 @@
+---
+name: {{ spec.frontmatter.name }}
+description: {{ spec.frontmatter.description }} 触发词：「{{ spec.frontmatter.trigger_word }}」
+version: {{ spec.frontmatter.version }}
+---
+
+# 《{{ spec.frontmatter.name }}》
+
+{{ spec.frontmatter.description }}
+
+## 启动方式
+
+本游戏由 TRPG-to-SKILL 自动生成。
+使用 CLI 启动:
+```
+python main.py play {{ spec.frontmatter.name }}
+```
+或说出触发词在 opencode 中启动（需部署到 ~/.agents/skills/）。
+
+## 文件结构
+
+```
+{{ spec.frontmatter.name }}/
+├── AGENTS.md           # 绝对禁令（每轮始终生效）
+├── SKILL.md            # 本文件
+├── loop_schema.json    # 游戏循环定义（引擎读取）
+├── lorebook.json       # 记忆系统（关键词触发条目）
+├── game_config.json    # 可调参数（支持热重载）
+├── skill/              # 参考文件（给人读）
+├── tools/              # Python 工具脚本
+└── saves/              # 存档文件
+```
+
+## 触发词
+
+`{{ spec.frontmatter.trigger_word }}`
+
+## 游戏阶段
+
+{% for phase in spec.phases %}
+{{ loop.index }}. **{{ phase.name }}**{% if phase.next_phase %} → {{ phase.next_phase }}{% endif %}
+   条件: {% if phase.condition %}{{ phase.condition }}{% else %}无条件{% endif %}
+{% endfor %}
+
+## 参考文件
+
+{% for ref in spec.reference_files %}
+- `{{ ref.filename }}`: {{ ref.title }}
+{% endfor %}
+
+---
+*由 TRPG-to-SKILL 自动生成于 {{ spec.generated_at }}*

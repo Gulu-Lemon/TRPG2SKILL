@@ -1,0 +1,123 @@
+/* TRPG-to-SKILL — 纸质主题 (E-Ink / Paper, 护眼阅读) */
+:root {
+    --bg: #fdfbf7;
+    --bg2: #f5f0e8;
+    --bg3: #e8dcc8;
+    --accent: #8b4513;
+    --accent2: #a0522d;
+    --text: #1a1a1a;
+    --text2: #5c534a;
+    --green: #2e7d32;
+    --yellow: #e65100;
+    --red: #c62828;
+    --panel-bg: #faf7f0;
+    --border: #d5cdc0;
+    --font: 'Georgia', 'Segoe UI', serif;
+    --overlay-bg: rgba(30,20,10,0.25);
+    --loading-bg: rgba(245,240,232,0.92);
+    --btn-text: #faf7f0;
+    --danger-hover: #b71c1c;
+}
+
+/* ── 纸纹 ── */
+body {
+    background-color: var(--bg);
+    background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(139,69,19,0.015) 2px, rgba(139,69,19,0.015) 4px);
+}
+
+/* ── 阅读优化 ── */
+#narrative-area {
+    font-family: 'Georgia', 'Noto Serif SC', 'SimSun', serif;
+    font-size: 16px;
+    line-height: 2;
+    color: #2a2a2a;
+    padding: 16px 8px;
+}
+#narrative-area p {
+    text-indent: 2em;
+    margin-bottom: 16px;
+}
+
+/* ── 顶栏 ── */
+#topbar {
+    background: #f5f0e8;
+    border-bottom: 2px solid #d5cdc0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+#topbar .logo { color: #8b4513; font-family: 'Georgia', serif; }
+#topbar .tab-btn { color: #8b7355; border-radius: 0; border-bottom: 2px solid transparent; }
+#topbar .tab-btn.active {
+    background: transparent;
+    color: #5c3a1e;
+    border-bottom-color: #8b4513;
+}
+
+/* ── 边框 ── */
+.settings-section {
+    background: #faf7f0;
+    border: 1px solid #d5cdc0;
+    border-left: 3px solid #8b4513;
+    box-shadow: 2px 2px 6px rgba(0,0,0,0.04);
+}
+.settings-section h3 {
+    border-bottom-color: #d5cdc0;
+}
+
+.btn-icon {
+    background: #f5f0e8;
+    color: #5c3a1e;
+    border: 1px solid #c5b8a0;
+    border-radius: 3px;
+    font-family: 'Georgia', serif;
+    font-size: 13px;
+}
+.btn-icon:hover { background: #e8dcc8; }
+
+#compile-input, #player-input, #compile-name, .profile-form input {
+    background: #fdfbf7;
+    color: #1a1a1a;
+    border: 1px solid #c5b8a0;
+    border-radius: 3px;
+    font-family: 'Georgia', serif;
+}
+#player-input:focus, #compile-input:focus {
+    border-color: #8b4513;
+    box-shadow: 0 0 0 2px rgba(139,69,19,0.1);
+    outline: none;
+}
+
+#compile-submit, #send-btn, .profile-form button, .slot-item button {
+    background: #8b4513;
+    border-radius: 3px;
+    font-family: 'Georgia', serif;
+    letter-spacing: 1px;
+}
+#compile-submit:hover, #send-btn:hover { background: #6b3410; }
+
+#input-row {
+    border-top: 1px solid #d5cdc0;
+    background: #f5f0e8;
+    padding: 12px 8px 4px;
+}
+
+.lorebook-entry {
+    background: #faf7f0;
+    border: 1px solid #e0d8c8;
+}
+.lorebook-entry:hover { background: #f0e8d8; }
+
+.slot-item { background: #faf7f0; border: 1px solid #e0d8c8; }
+
+.panel-drawer {
+    background: #fdfbf7;
+    border-left: 2px solid #c5b8a0;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.06);
+}
+
+#progress-bar {
+    box-shadow: 0 0 4px rgba(139,69,19,0.3);
+}
+
+.config-row { border-bottom: 1px solid #e0d8c8; }
+.theme-option { background: #faf7f0; border-color: #c5b8a0; }

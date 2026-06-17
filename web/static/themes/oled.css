@@ -1,0 +1,59 @@
+/* TRPG-to-SKILL — OLED 纯黑主题 (省电、高对比) */
+:root {
+    --bg: #000000;
+    --bg2: #0a0a0a;
+    --bg3: #1a1a1a;
+    --accent: #ff6b6b;
+    --accent2: #333;
+    --text: #ffffff;
+    --text2: #888;
+    --green: #4caf50;
+    --yellow: #ff9800;
+    --red: #f44336;
+    --panel-bg: #050505;
+    --border: #1a1a1a;
+    --font: 'Segoe UI', system-ui, sans-serif;
+    --overlay-bg: rgba(0,0,0,0.8);
+    --loading-bg: rgba(0,0,0,0.92);
+    --btn-text: white;
+    --danger-hover: #d32f2f;
+}
+
+/* ── 微妙深度 ── */
+#topbar {
+    border-bottom: 1px solid #1a1a1a;
+    box-shadow: 0 1px 4px rgba(255,255,255,0.02);
+}
+
+#compile-input, #player-input, #compile-name, .profile-form input {
+    background: #0a0a0a;
+    border: 1px solid #1a1a1a;
+    transition: border-color 0.2s;
+}
+#player-input:focus, #compile-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(255,107,107,0.2);
+    outline: none;
+}
+
+.btn-icon {
+    background: #111;
+    border: 1px solid #1a1a1a;
+    transition: background 0.2s;
+}
+.btn-icon:hover { background: #1a1a1a; }
+
+.settings-section {
+    border-left: 3px solid var(--accent);
+    box-shadow: 0 1px 6px rgba(255,255,255,0.02);
+}
+.slot-item { background: #080808; border: 1px solid #111; }
+.lorebook-entry { background: #080808; border: 1px solid #111; }
+
+#progress-bar {
+    box-shadow: 0 0 6px rgba(255,107,107,0.3);
+}
+
+.panel-drawer {
+    box-shadow: -2px 0 20px rgba(0,0,0,0.8);
+}

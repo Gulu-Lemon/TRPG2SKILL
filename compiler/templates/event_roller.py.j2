@@ -1,0 +1,33 @@
+"""
+event_roller.py — 随机事件选择器
+
+用法:
+    python tools/event_roller.py --day     # 白天事件
+    python tools/event_roller.py --night   # 夜晚事件
+    python tools/event_roller.py --any     # 任意事件
+"""
+import sys
+import json
+import random
+
+_rng = random.SystemRandom()
+
+EVENT_POOL = [
+{% for event in tool.data_pools %}
+    {"event": "{{ event }}", "type": "general"},
+{% endfor %}
+]
+
+def pick_event(time_mode="any"):
+    return _rng.choice(EVENT_POOL) if EVENT_POOL else {"event": "平静的日常", "type": "default"}
+
+def main():
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+    
+    mode = sys.argv[1] if len(sys.argv) > 1 else "any"
+    result = pick_event(mode)
+    print(json.dumps(result, ensure_ascii=False))
+
+if __name__ == "__main__":
+    main()

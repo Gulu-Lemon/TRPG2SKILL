@@ -1,0 +1,36 @@
+"""
+npc_roller.py — 随机 NPC 生成器
+
+用法:
+    python tools/npc_roller.py --new              # 生成一个新 NPC
+    python tools/npc_roller.py --random           # 从池中随机抽取
+    python tools/npc_roller.py --list             # 列出所有模板
+"""
+import sys
+import json
+import random
+
+_rng = random.SystemRandom()
+
+NPC_POOL = [
+{% for npc in tool.data_pools %}
+    {"name": "{{ npc }}", "type": "citizen"},
+{% endfor %}
+]
+
+def generate_new():
+    return _rng.choice(NPC_POOL) if NPC_POOL else {"name": "路人", "type": "unknown"}
+
+def main():
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "--new":
+        print(json.dumps(generate_new(), ensure_ascii=False))
+    elif len(sys.argv) > 1 and sys.argv[1] == "--list":
+        print(json.dumps(NPC_POOL, ensure_ascii=False, indent=2))
+    else:
+        print(json.dumps(generate_new(), ensure_ascii=False))
+
+if __name__ == "__main__":
+    main()

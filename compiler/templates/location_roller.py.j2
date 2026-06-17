@@ -1,0 +1,26 @@
+"""
+location_roller.py — 随机地点选择器
+
+用法:
+    python tools/location_roller.py --random
+"""
+import sys
+import json
+import random
+
+_rng = random.SystemRandom()
+
+LOCATIONS = [
+{% for loc in tool.data_pools %}
+    "{{ loc }}",
+{% endfor %}
+]
+
+def main():
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+    result = _rng.choice(LOCATIONS) if LOCATIONS else "未知地点"
+    print(json.dumps({"location": result}, ensure_ascii=False))
+
+if __name__ == "__main__":
+    main()
