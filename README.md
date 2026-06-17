@@ -11,7 +11,7 @@ Download from https://www.python.org/
 ### 2. Download TRPG2SKILL
 
 ```bash
-git clone https://github.com/your-username/TRPG2SKILL.git
+git clone git@github.com:Gulu-Lemon/TRPG2SKILL.git
 cd TRPG2SKILL
 ```
 
