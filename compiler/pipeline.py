@@ -91,6 +91,16 @@ def compile(input_file: str, output_dir: str, feedback: str = "",
          f"阶段:{len(comprehensive.get('phases',[]))} "
          f"禁令:{len(comprehensive.get('absolute_bans',[]))}")
 
+    # 规范化阶段条件：自然语言 → turn > 1（防 LLM 输出不规范条件）
+    import re
+    _has_chinese = re.compile(r'[\u4e00-\u9fff]')
+    for phase in comprehensive.get("phases", []):
+        cond = phase.get("condition", "")
+        if cond and _has_chinese.search(cond):
+            old_cond = cond
+            phase["condition"] = "turn > 1"
+            print(f"  [WARN] 阶段 {phase.get('name','?')} 的条件 '{old_cond}' 不是机器可评估格式，已降级为 turn > 1")
+
     # ═══════════════════ Phase B: 工具 ═══════════════════
     emit("tools", 50, "分析工具需求...")
     from compiler.multi_analyzer import TOOLS_PROMPT

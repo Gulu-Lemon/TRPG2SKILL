@@ -42,7 +42,23 @@ class GameEngine:
 
         self.loop_schema = self._load_json("loop_schema.json")
         self.phase_scripts = self.loop_schema.get("phase_scripts", {})
-        self.agent_tools = self.loop_schema.get("agent_tools", [])
+        self.narrative_prompt_template = self.loop_schema.get("prompts", {}).get("narrative_prompt", "")
+        self.agent_tools = self.loop_schema.get("agent_tools") or []
+        # 内置工具：始终注入 advance_phase
+        self.agent_tools.append({
+            "type": "function",
+            "function": {
+                "name": "advance_phase",
+                "description": "将游戏推进到下一个阶段。当你判断当前阶段的剧情已经完成、应该进入下一阶段时调用。目标阶段名可选。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "target": {"type": "string", "description": "目标阶段名，留空则自动进入下一个阶段"}
+                    },
+                    "required": []
+                }
+            }
+        })
         self.agents_md = self._load_text("AGENTS.md") or "# 无规则文件"
 
         self.config_mgr = ConfigManager(self.skill_dir / "game_config.json")
@@ -68,6 +84,7 @@ class GameEngine:
         self.state = GameState()
         self._load_or_init_state()
         self._last_narrative = ""
+        self._turns_in_phase = 0
 
         self.static_system = self.prompt_assembler.system_prompt
 
@@ -106,10 +123,14 @@ class GameEngine:
                 json.dumps(GameState().to_dict(), ensure_ascii=False, indent=2),
                 encoding="utf-8"
             )
-        self.state.turn = 1
-        self.state.day = 1
-        self.state.phase = self.phase_machine.current
-        self._write_state()
+        try:
+            self.state.turn = 1
+            self.state.day = 1
+            self.state.phase = self.phase_machine.current
+            self._write_state()
+        except Exception:
+            import traceback
+            traceback.print_exc()
 
     # ═══════════════════ 主循环 ═══════════════════
 
@@ -123,8 +144,12 @@ class GameEngine:
             if safety > 500:
                 yield {"type": "error", "content": "循环次数超限，游戏中断"}
                 return
-            if self.phase_machine.tick(self.state):
+
+            old_phase = self.state.phase
+            if self.phase_machine.tick(self.state, turns_in_phase=self._turns_in_phase):
                 self.state.phase = self.phase_machine.current
+            if self.state.phase != old_phase:
+                self._turns_in_phase = 0
 
             for step in steps:
                 step_type = step.get("type", "")
@@ -153,6 +178,7 @@ class GameEngine:
 
                 elif step_type == "llm_process":
                     self._process_input()
+                    self._turns_in_phase += 1
 
                 elif step_type == "write_state":
                     self._write_state()
@@ -209,6 +235,20 @@ class GameEngine:
 
         context = pack_context(self.state, active_entries,
                                phase_scripts=self.phase_scripts)
+
+        if self.narrative_prompt_template:
+            try:
+                extra_rules = self.phase_scripts.get(self.state.phase, [])
+                rendered = self.narrative_prompt_template.format(
+                    phase=self.state.phase,
+                    location=self.state.player_location or "未知",
+                    extra_rules="\n".join(f"- {s}" for s in extra_rules),
+                    lorebook_context="",
+                    state_snapshot="",
+                )
+                context = rendered + "\n\n" + context
+            except (KeyError, ValueError):
+                pass
 
         messages = self.memory.build_messages(self.state)
         messages.append({"role": "user", "content": context})
@@ -287,6 +327,20 @@ class GameEngine:
             entries = [e for e in self.lorebook.entries.values() if e.type == 'npc']
             return {"npcs": [{"name": e.title, "brief": e.content[:100]} for e in entries[:20]],
                     "total": len(entries)}
+
+        elif name == "advance_phase":
+            target = args.get("target", "")
+            old = self.state.phase
+            if target and target in self.phase_machine.phases:
+                self.phase_machine.set_phase(target)
+            else:
+                self.phase_machine.tick(self.state)
+            self.state.phase = self.phase_machine.current
+            # 返回当前阶段和可用脚本预览
+            scripts = self.phase_scripts.get(self.state.phase, [])
+            preview = scripts[:3] if scripts else []
+            return {"ok": True, "from": old, "to": self.state.phase,
+                    "phase_scripts_preview": preview}
 
         return {"error": f"未知工具: {name}"}
 

@@ -40,7 +40,10 @@ COMPREHENSIVE_PROMPT = """你是 TRPG 剧本分析师。请阅读以下世界书
 - 游戏从开始到结束依次经历的状态
 - 有明确的先后顺序和转换条件
 - 字段: [{name, next, condition}]
-- condition 要写成机器可判断的形式，如 "玩家输入XP关键词后"、"玩家回复确认后"、"玩家选择选项后"
+- condition 必须是机器可判断的表达式，仅支持：turn > X、turn >= X、has_flag('xxx')
+  示例："turn > 1"（经过1轮后触发）、"turn > 3"（经过3轮后触发）。
+  对于序章的多幕，用递增的 turn 条件：ACT1→ACT2 用 "turn > 1"、ACT2→ACT3 用 "turn > 2"。
+  绝对不要用自然语言描述条件。
 - 注意：日常时间循环（如"课间/午休/放学后"）是时间路由系统，用 time_block_system 字段记录而非 phases
 - 无明确阶段则 phases 留空，mapper 会自动创建 MAIN
 
@@ -48,6 +51,7 @@ COMPREHENSIVE_PROMPT = """你是 TRPG 剧本分析师。请阅读以下世界书
 - 原文序章有明确的多幕结构（如 5.1/5.2/5.3 或"第一幕/第二幕"）时，每幕创建一个独立 phase
 - 每个 phase 的 phase_scripts 包含该幕的完整步骤指令
 - 幕之间有明确的用户交互触发点（用户输入后自动流转到下一幕）
+- 每幕的 condition 用 turn > N（N 递增：第1幕 turn>1、第2幕 turn>2）
 - 如果原文序章只是单段描述无分幕，则用一个 PROLOGUE 阶段即可
 
 **内部状态机（放入对应 phase 的 phase_scripts 中）**：

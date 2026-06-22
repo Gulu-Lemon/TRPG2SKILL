@@ -17,7 +17,7 @@ class PhaseMachine:
         self.phases = {p.name: p for p in phases}
         self.current: str = phases[0].name if phases else "MAIN"
 
-    def tick(self, state: GameState) -> bool:
+    def tick(self, state: GameState, turns_in_phase: int = 0) -> bool:
         """检查是否应推进阶段。返回 True 表示发生了转换。"""
         phase = self.phases.get(self.current)
         if not phase or not phase.next_phase:
