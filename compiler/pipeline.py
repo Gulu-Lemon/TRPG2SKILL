@@ -22,9 +22,9 @@ def compile(input_file: str, output_dir: str, feedback: str = "",
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    def emit(phase, progress, detail=""):
+    def emit(phase, progress, detail="", **extra):
         if progress_callback:
-            progress_callback(phase, progress, detail)
+            progress_callback(phase, progress, detail, **extra)
         else:
             print(f"  [{phase}] {progress}% {detail}")
 
@@ -199,6 +199,20 @@ def compile(input_file: str, output_dir: str, feedback: str = "",
     generate(spec, output_path)
     emit("generate", 99, "Done")
 
-    emit("done", 100, f"'{analysis.game_name}' 评分:{best_score or '?'}%")
+    review_data = {
+        "game_name": comprehensive.get("game_name", ""),
+        "genre": comprehensive.get("genre", ""),
+        "tone": comprehensive.get("tone", ""),
+        "npcs": comprehensive.get("npcs", []),
+        "locations": comprehensive.get("locations", []),
+        "items": comprehensive.get("items", []),
+        "bans": [b.get("text", "") for b in (comprehensive.get("absolute_bans") or [])],
+        "phases": comprehensive.get("phases", []),
+        "time_system": comprehensive.get("time_system", ""),
+        "score": best_score or 0,
+        "lorebook_count": len(spec.lorebook_entries),
+    }
+    emit("done", 100, f"'{analysis.game_name}' 评分:{best_score or '?'}%",
+         review=review_data)
     llm.close()
     return str(output_path)

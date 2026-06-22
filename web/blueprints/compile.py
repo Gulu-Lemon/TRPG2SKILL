@@ -34,8 +34,12 @@ def compile_start():
 
     def generate():
         q = queue.Queue()
+        _review_data = {}
 
-        def progress_callback(phase, progress, detail):
+        def progress_callback(phase, progress, detail, **extra):
+            nonlocal _review_data
+            if "review" in extra:
+                _review_data = extra["review"]
             q.put({"type": phase + "_progress", "phase": phase,
                    "progress": progress, "detail": str(detail)})
 
@@ -55,7 +59,8 @@ def compile_start():
                         progress_callback=progress_callback)
 
                 tmp_file.unlink(missing_ok=True)
-                q.put({"type": "ok", "output_dir": str(output_dir)})
+                q.put({"type": "ok", "output_dir": str(output_dir),
+                       "review": _review_data})
             except Exception as e:
                 q.put({"type": "error", "message": str(e)})
             finally:

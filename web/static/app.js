@@ -129,10 +129,17 @@ function handleCompileEvent(type, dataStr) {
         var resultDiv = document.getElementById('compile-result');
         resultDiv.style.display = 'block';
         resultDiv.classList.add('show');
+        var score = (data.review && data.review.score) || '?';
+        var passText = (score >= 60 || score === '?') ? '编译通过!' : '编译未通过';
+        var cls = (score >= 60 || score === '?') ? 'success' : 'fail';
         resultDiv.querySelector('.result-text').innerHTML =
-            '<span class="success">编译通过!</span> 目录: ' + (data.output_dir || '');
+            '<span class="' + cls + '">' + passText + '</span> 评分: ' + score + '%' +
+            ' — ' + (data.output_dir || '');
         document.getElementById('btn-play-compiled').style.display = 'inline-block';
-        document.getElementById('compile-review').style.display = 'block';
+        if (data.review) {
+            S._analysis = data.review;
+            showCompileResult(data.review);
+        }
         return;
     }
 
@@ -162,40 +169,54 @@ function setProgress(pct, text) {
 }
 
 function showCompileResult(data) {
-    var div = document.getElementById('compile-result');
-    div.style.display = 'block';
-    div.classList.add('show');
-
-    var cls = data.passed ? 'success' : 'fail';
-    var text = data.passed ? '编译通过!' : '编译未通过';
-    div.querySelector('.result-text').innerHTML =
-        '<span class="' + cls + '">' + text + '</span> 评分: ' + data.score + '%<br>' +
-        '目录: ' + (data.output_dir || '') + '<br>' +
-        '触发词: ' + (data.trigger_word || '');
-
-    if (data.output_dir) {
-        S.compiledDir = data.output_dir;
-        document.getElementById('btn-play-compiled').style.display = 'inline-block';
-    }
-
+    var cls = data.score >= 60 ? 'success' : 'fail';
+    var text = data.score >= 60 ? '编译通过!' : '编译未通过';
     document.getElementById('compile-submit').disabled = false;
 
-    // 显示审核面板
     var review = document.getElementById('compile-review');
     var detail = document.getElementById('review-detail');
-    if (S._analysis) {
-        var a = S._analysis;
-        var lines = [];
-        lines.push('<b>游戏名:</b> ' + escapeHtml(a.game_name || '?'));
-        lines.push('<b>类型:</b> ' + escapeHtml(a.genre || '?') + ' | <b>基调:</b> ' + escapeHtml(a.tone || '?'));
-        if (a.npcs && a.npcs.length) lines.push('<b>角色:</b> ' + a.npcs.map(function(n){return escapeHtml(n.name||'?');}).join(', '));
-        if (a.locations && a.locations.length) lines.push('<b>地点:</b> ' + a.locations.map(function(l){return escapeHtml(l.name||'?');}).join(', '));
-        if (a.bans && a.bans.length) lines.push('<b>禁令:</b> ' + a.bans.map(function(b){return escapeHtml(b);}).join('; '));
-        if (a.phases && a.phases.length) lines.push('<b>阶段:</b> ' + a.phases.map(function(p){return escapeHtml(p.name)+' -> '+(p.next||'终');}).join(', '));
-        if (a.time_system) lines.push('<b>时间系统:</b> ' + escapeHtml(a.time_system));
-        detail.innerHTML = lines.join('<br>');
-        review.style.display = 'block';
+    var a = data;
+    var lines = [];
+
+    lines.push('<div style="font-size:15px;font-weight:bold;margin-bottom:6px">' +
+               escapeHtml(a.game_name || '?') + '</div>');
+    if (a.genre || a.tone) {
+        lines.push('<span style="color:var(--text2)">' +
+                   escapeHtml(a.genre || '?') + ' · ' + escapeHtml(a.tone || '?') +
+                   '</span>');
     }
+
+    lines.push('<div style="margin-top:8px;display:grid;grid-template-columns:auto 1fr;gap:3px 12px">');
+    if (a.npcs && a.npcs.length) {
+        var npcNames = a.npcs.map(function(n){return escapeHtml(n.name||'?');}).join(', ');
+        lines.push('<b>NPC</b><span>' + npcNames + ' (' + a.npcs.length + ')</span>');
+    }
+    if (a.locations && a.locations.length) {
+        var locNames = a.locations.map(function(l){return escapeHtml(l.name||'?');}).join(', ');
+        lines.push('<b>地点</b><span>' + locNames + ' (' + a.locations.length + ')</span>');
+    }
+    if (a.items && a.items.length) {
+        var itemNames = a.items.map(function(it){return escapeHtml(it.name||'?');}).join(', ');
+        lines.push('<b>物品</b><span>' + itemNames + ' (' + a.items.length + ')</span>');
+    }
+    if (a.bans && a.bans.length) {
+        lines.push('<b>禁令</b><span>' + a.bans.length + ' 条</span>');
+    }
+    if (a.phases && a.phases.length) {
+        var phaseFlow = a.phases.map(function(p){
+            return escapeHtml(p.name) + (p.next ? ' → ' + escapeHtml(p.next) : '');
+        }).join(', ');
+        lines.push('<b>阶段</b><span>' + phaseFlow + '</span>');
+    }
+    if (a.lorebook_count !== undefined) {
+        lines.push('<b>Lorebook</b><span>' + a.lorebook_count + ' 条目</span>');
+    }
+    lines.push('<b>评分</b><span style="color:' + (a.score >= 60 ? 'var(--green)' : 'var(--red)') + '">' +
+               (a.score || '?') + '%</span>');
+    lines.push('</div>');
+
+    detail.innerHTML = lines.join('');
+    review.style.display = 'block';
 }
 
 function loadCompiledGame() {
@@ -470,50 +491,65 @@ function recompileSinglePhase(phaseId) {
 // ═══════════════════ Play ═══════════════════
 
 function loadGameList() {
-    fetch('/api/play/list').then(r => r.json()).then(function(data) {
-        var allSkills = data.skills || [];
+    var builtIn = fetch('/api/play/list').then(r => r.json()).then(function(d) { return d.skills || []; }).catch(function() { return []; });
+    // 扫描已存储的自定义路径
+    var customPaths = getCustomPaths();
+    var customPromises = customPaths.map(function(p) {
+        return fetch('/api/play/scan', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dir: p })
+        }).then(r => r.json()).then(function(d) {
+            return (d.skills || []).map(function(s) {
+                s._customPath = p;
+                return s;
+            });
+        }).catch(function() { return []; });
+    });
+
+    Promise.all([builtIn].concat(customPromises)).then(function(results) {
+        var allSkills = [];
+        var seen = {};
+        results.forEach(function(arr) {
+            arr.forEach(function(s) {
+                if (!seen[s.path]) { seen[s.path] = true; allSkills.push(s); }
+            });
+        });
+
         var hidden = getHiddenSkills();
         var showHidden = localStorage.getItem('trpg-show-hidden') === '1';
         document.getElementById('toggle-hidden-btn').style.display = 'inline-block';
         document.getElementById('toggle-hidden-btn').textContent = showHidden ? '隐藏已屏蔽' : '显示已隐藏';
 
-        // 按路径前缀分组
         var groups = {};
         allSkills.forEach(function(s) {
-            var key = s.path.replace(/[/\\][^/\\]*$/, '');  // 父目录
+            var key = s._customPath || s.path.replace(/[/\\][^/\\]*$/, '');
             if (!groups[key]) groups[key] = [];
             groups[key].push(s);
         });
 
         var html = '';
-        var visiblePaths = Object.keys(groups).filter(function(k) {
-            return !hidden._paths || !hidden._paths[k];
-        });
-        if (!visiblePaths.length && Object.keys(groups).length > 0) {
-            html += '<p style="color:var(--text2);margin:8px 0">所有路径已屏蔽。</p>';
-        }
 
         Object.keys(groups).forEach(function(pathKey) {
             var isHidden = hidden._paths && hidden._paths[pathKey];
             var isPermanent = pathKey.endsWith('generated') || pathKey.replace(/\\/g,'/').endsWith('generated');
+            var isCustom = !isPermanent && customPaths.indexOf(pathKey) >= 0;
             var skills = groups[pathKey];
-            var visSkills = skills.filter(function(s) {
-                return !hidden[s.path];
-            });
+            var visSkills = skills.filter(function(s) { return !hidden[s.path]; });
 
-            // 持久路径不参与隐藏
             if (isHidden && isPermanent) {
                 isHidden = false;
                 delete (hidden._paths || {})[pathKey];
                 setHiddenSkills(hidden);
             }
-            // 普通路径已屏蔽 → 跳过
-            if (isHidden && !isPermanent) return;
+            if (isHidden && !isPermanent && !isCustom) return;
 
-            html += '<div class="path-group-header">' +
-                escapeHtml(pathKey) +
-                (isPermanent ? '' : ('<button class="btn-icon path-hide-btn" style="margin-left:8px;font-size:11px;padding:2px 8px"' +
-                ' data-path="' + escapeHtml(pathKey) + '">停止扫描</button>')) +
+            html += '<div class="path-group-header">' + escapeHtml(pathKey) +
+                (isPermanent ? '' : 
+                 (isCustom ?
+                  '<button class="btn-icon" style="margin-left:8px;font-size:11px;padding:2px 8px" ' +
+                  'onclick="removeCustomPath(\'' + escapeHtmlAttr(pathKey) + '\')">移除路径</button>' :
+                  '<button class="btn-icon path-hide-btn" style="margin-left:8px;font-size:11px;padding:2px 8px"' +
+                  ' data-path="' + escapeHtml(pathKey) + '">停止扫描</button>')) +
                 '</div>';
 
             var cards = (showHidden ? skills : visSkills);
@@ -549,7 +585,24 @@ function loadGameList() {
         });
         document.getElementById('game-list').innerHTML = html || '<p style="color:var(--text2)">暂无可用游戏。</p>';
         bindGameListEvents();
+    }).catch(function(e) {
+        document.getElementById('game-list').innerHTML = '<p style="color:var(--red)">加载失败: ' + (e.message || e) + '</p>';
     });
+}
+
+function getCustomPaths() {
+    try { return JSON.parse(localStorage.getItem('trpg-custom-paths') || '[]'); }
+    catch(e) { return []; }
+}
+
+function saveCustomPaths(paths) {
+    localStorage.setItem('trpg-custom-paths', JSON.stringify(paths));
+}
+
+function removeCustomPath(path) {
+    var paths = getCustomPaths().filter(function(p) { return p !== path; });
+    saveCustomPaths(paths);
+    loadGameList();
 }
 
 function bindGameListEvents() {
@@ -697,37 +750,21 @@ function scanCustomDir() {
             alert('该目录下未发现 SKILL 子目录');
             return;
         }
-        renderScannedSkills(data.skills);
+        var paths = getCustomPaths();
+        if (paths.indexOf(dir) < 0) {
+            paths.push(dir);
+            saveCustomPaths(paths);
+        }
+        loadGameList();
     }).catch(function(e) {
         showLoading(false);
         alert('扫描失败: ' + (e.message || e));
     });
 }
 
-function renderScannedSkills(skills) {
-    var hidden = getHiddenSkills();
-    var html = '<div class="path-group-header">自定义扫描 (' + skills.length + ' 个游戏)</div>';
-    skills.forEach(function(s) {
-        var info = s.turn ? ' 轮:' + s.turn + ' ' + (s.phase || '') : '新游戏';
-        if (s.saved) info += ' ' + s.saved.slice(0, 10);
-        html += '<div class="game-card">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center">' +
-            '<span style="font-weight:600;font-size:14px">' + escapeHtml(s.name) + '</span>' +
-            '<span style="font-size:12px;color:var(--text2)">' + info + '</span>' +
-            '</div>' +
-            '<div style="font-size:11px;color:var(--text2);margin:4px 0 8px">' + escapeHtml(s.dir) + '</div>' +
-            '<div style="display:flex;gap:6px">' +
-            '<button class="btn-icon new-game-btn" style="padding:5px 14px;font-size:12px"' +
-            ' data-path="' + escapeHtml(s.path) + '">开始新游戏</button>' +
-            '<button class="btn-icon save-view-btn" style="padding:5px 14px;font-size:12px"' +
-            ' data-path="' + escapeHtml(s.path) + '">查看存档</button>' +
-            '</div></div>';
-    });
-    document.getElementById('game-list').insertAdjacentHTML('beforeend', html);
-    bindGameListEvents();
-}
 
 function startPlaySession(gameName, loadData) {
+    switchTab('play');
     S.gameLoaded = true;
     document.getElementById('save-btn-top').style.display = 'inline-block';
     document.getElementById('play-load').style.display = 'none';
@@ -1226,6 +1263,7 @@ function switchTab(name) {
 // Init
 loadProfiles();
 initDragDrop();
+loadGameList();
 
 // ═══════════════════ Theme Switcher ═══════════════════
 
