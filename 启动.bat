@@ -21,53 +21,8 @@ if errorlevel 1 (
 echo.
 echo   === TRPG2SKILL v1.0.0-beta ===
 echo.
-echo   [1] Web GUI     (http://127.0.0.1:8641)
-echo   [2] Compile     (world book -^> SKILL)
-echo   [3] Play        (CLI mode)
-echo   [4] Setup       (API config)
+echo   Starting Web GUI at http://127.0.0.1:8641
 echo.
-set /p choice="  Choice [1-4, Enter=1]: "
-if "%choice%"=="" set choice=1
-
-if "%choice%"=="1" goto serve
-if "%choice%"=="2" goto compile
-if "%choice%"=="3" goto play
-if "%choice%"=="4" goto setup
-goto serve
-
-:serve
-echo.
-echo   Starting Web GUI ...
-echo   http://127.0.0.1:8641
-echo   Press Ctrl+C to stop
-echo.
+start "" "http://127.0.0.1:8641"
 python main.py serve
 if errorlevel 1 pause
-goto :eof
-
-:compile
-echo.
-set /p input="  World book file: "
-if "%input%"=="" goto :eof
-set /p output="  Output dir [Enter=default]: "
-if "%output%"=="" (
-    python main.py compile "%input%"
-) else (
-    python main.py compile "%input%" --output "%output%"
-)
-pause
-goto :eof
-
-:play
-echo.
-set /p gamedir="  SKILL directory: "
-if "%gamedir%"=="" goto :eof
-python main.py play "%gamedir%"
-pause
-goto :eof
-
-:setup
-echo.
-python main.py setup
-pause
-goto :eof
