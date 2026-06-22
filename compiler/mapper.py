@@ -94,9 +94,17 @@ def _build_loop(analysis, phases) -> list[LoopStep]:
                 if s.type == "route":
                     s.params["route"] = route
 
-    if not analysis.randomness.need_event_roller:
+    # 检查是否有可路由的工具
+    has_tools = bool(getattr(analysis, 'tool_specs', []))
+    needs_roller = analysis.randomness.need_event_roller
+    has_route_tools = any(
+        entry.get("tool")
+        for s in loop if s.type == "route"
+        for entry in s.params.get("route", {}).values()
+    )
+    if not has_tools and not needs_roller and not has_route_tools:
         for s in loop:
-            if s.type in ("route", "tool") and "roller" in str(s.params.get("tool", "")):
+            if s.type == "tool":
                 s.type = "llm_narrative"
                 s.params["prompt_key"] = "narrative_prompt"
 
@@ -141,13 +149,38 @@ def _build_agents_rules(analysis) -> list[dict]:
         "text": f"绝对禁止：使用网文隐喻或现代流行语。保持{analysis.tone}氛围。",
         "priority": 0,
     })
-    rules.append({
-        "title": "禁止编造",
-        "text": "绝对禁止：自行编造物品名称、角色姓名、地点名称。所有实体名称必须来自世界书原文（Lorebook中已存储），不得虚构不存在的名称、属性或效果。",
-        "priority": 9,
-    })
+    if _detect_procedural_content(analysis):
+        rules.append({
+            "title": "禁止编造",
+            "text": "绝对禁止：虚构Lorebook中已有实体的名称、属性或效果。但世界书明确授权即兴生成的内容（如盲盒抽取、随机NPC生成、事件池等），可在规则约束范围内合理生成。",
+            "priority": 9,
+        })
+    else:
+        rules.append({
+            "title": "禁止编造",
+            "text": "绝对禁止：自行编造物品名称、角色姓名、地点名称。所有实体名称必须来自世界书原文（Lorebook中已存储），不得虚构不存在的名称、属性或效果。",
+            "priority": 9,
+        })
 
     return rules
+
+
+def _detect_procedural_content(analysis) -> bool:
+    """检测世界书是否以生成式内容（盲盒/随机NPC/事件池）为核心"""
+    tool_specs = getattr(analysis, 'tool_specs', []) or []
+    for ts in tool_specs:
+        if ts.get("data_pool"):
+            return True
+    sections = analysis.entities.sections
+    procedural_kw = ["随机", "盲盒", "抽取", "即兴", "生成引擎", "生成机制", "随机抽取"]
+    for s in sections:
+        text = s.get("text", "") + s.get("title", "")
+        if any(kw in text for kw in procedural_kw):
+            return True
+    ws = analysis.entities.world_summary or ""
+    if any(kw in ws for kw in procedural_kw):
+        return True
+    return False
 
 
 def _build_lorebook_entries(analysis) -> list[LorebookEntry]:

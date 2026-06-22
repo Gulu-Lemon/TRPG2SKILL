@@ -260,7 +260,7 @@ class LLMClient:
         messages: list[dict[str, str]],
         system: Optional[str] = None,
         temperature: Optional[float] = None,
-        max_tokens: int = 2048,
+        max_tokens: int = 4096,
     ) -> dict:
         json_instruction = (
             "\n\n重要：你必须只输出一个有效的 JSON 对象，"

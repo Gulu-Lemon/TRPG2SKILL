@@ -1,5 +1,5 @@
 ﻿"""
-编译器管线编排器 — 多阶段 LLM 分析 + 校验 + 自动修正
+编译器管线编排器 — 3 阶段 LLM 分析：综合分析 → 工具提取 → 校验+修正
 """
 from pathlib import Path
 import json
@@ -26,11 +26,8 @@ def compile(input_file: str, output_dir: str, feedback: str = "",
         if progress_callback:
             progress_callback(phase, progress, detail)
         else:
-            pct = int(progress)
-            bar = "=" * (pct // 5) + "-" * (20 - pct // 5)
-            print(f"  [{bar}] {phase} {detail}")
+            print(f"  [{phase}] {progress}% {detail}")
 
-    # ── 基础解析 ──
     emit("parse", 0, "解析输入...")
     sections = parse_input(str(input_path))
     full_text = "\n\n".join(f"## {t}\n{txt}" for t, txt in sections.items())
@@ -41,19 +38,40 @@ def compile(input_file: str, output_dir: str, feedback: str = "",
     llm = create_llm_from_profile(use_analyzer=True)
     import json as _json
 
-    def call_llm(system_prompt, max_tokens=None, temperature=0.3, messages=None):
+    def call_llm(system_prompt, temperature=0.3, messages=None, max_tokens=4096):
         try:
             if messages is None:
                 messages = [{"role": "user", "content": full_text}]
             return llm.chat_json(
-                messages=messages,
-                system=system_prompt,
-                temperature=temperature,
-                max_tokens=max_tokens,
+                messages=messages, system=system_prompt,
+                temperature=temperature, max_tokens=max_tokens,
             )
         except Exception as e:
             print(f"    [WARN] LLM 调用失败: {e}")
             return {}
+
+    def make_entity_summary(d: dict) -> str:
+        lines = []
+        lines.append(f"游戏名: {d.get('game_name', '?')}")
+        lines.append(f"类型: {d.get('genre', '?')}  基调: {d.get('tone', '?')}")
+        lines.append(f"角色({len(d.get('npcs',[]))}): {', '.join(e.get('name','') for e in d.get('npcs',[])[:15])}")
+        lines.append(f"地点({len(d.get('locations',[]))}): {', '.join(e.get('name','') for e in d.get('locations',[])[:10])}")
+        lines.append(f"物品({len(d.get('items',[]))}): {', '.join(e.get('name','') for e in d.get('items',[])[:20])}")
+        lines.append(f"阶段({len(d.get('phases',[]))}): {', '.join(p.get('name','') for p in d.get('phases',[]))}")
+        lines.append(f"禁令({len(d.get('absolute_bans',[]))}): {', '.join(b.get('title','') for b in d.get('absolute_bans',[])[:10])}")
+        return "\n".join(lines)
+
+    def make_analysis_summary(d: dict) -> str:
+        return _json.dumps({
+            "game_name": d.get("game_name"),
+            "npcs_count": len(d.get("npcs", [])),
+            "locations_count": len(d.get("locations", [])),
+            "items_count": len(d.get("items", [])),
+            "factions_count": len(d.get("factions", [])),
+            "bans_count": len(d.get("absolute_bans", [])),
+            "phases": d.get("phases", []),
+            "tool_specs_count": len(d.get("tool_specs", [])),
+        }, ensure_ascii=False, indent=2)
 
     def serialize_errors(errors):
         if not errors: return ""
@@ -62,56 +80,55 @@ def compile(input_file: str, output_dir: str, feedback: str = "",
             lines.append(f"- Phase {e.get('phase', '?')}/{e.get('field', '?')}: {e.get('issue', '?')} → {e.get('fix', '?')}")
         return "\n".join(lines)
 
-    # ═══════════════════ Phase 1: 实体 ═══════════════════
-    emit("entity", 10, "提取实体...")
-    from compiler.multi_analyzer import ENTITY_PROMPT
-    entity = call_llm(ENTITY_PROMPT)
-    emit("entity", 20, f"{len(entity.get('npcs',[]))} 角色, {len(entity.get('locations',[]))} 地点")
+    # ═══════════════════ Phase A: 综合分析 ═══════════════════
+    emit("comprehensive", 10, "综合分析中...")
+    from compiler.multi_analyzer import COMPREHENSIVE_PROMPT, comprehensive_to_analysis
 
-    # ═══════════════════ Phase 2: 规则 ═══════════════════
-    emit("rules", 25, "提取规则...")
-    from compiler.multi_analyzer import RULES_PROMPT
-    rules = call_llm(RULES_PROMPT)
-    emit("rules", 35, f"{len(rules.get('absolute_bans',[]))} 禁令")
+    comprehensive = call_llm(COMPREHENSIVE_PROMPT, max_tokens=8192)
+    emit("comprehensive", 40,
+         f"游戏:{comprehensive.get('game_name','?')} "
+         f"角色:{len(comprehensive.get('npcs',[]))} "
+         f"阶段:{len(comprehensive.get('phases',[]))} "
+         f"禁令:{len(comprehensive.get('absolute_bans',[]))}")
 
-    # ═══════════════════ Phase 3: 结构 ═══════════════════
-    emit("structure", 40, "分析结构...")
-    from compiler.multi_analyzer import STRUCTURE_PROMPT
-    structure = call_llm(STRUCTURE_PROMPT)
-    emit("structure", 50, f"{len(structure.get('phases',[]))} 阶段")
-
-    # ═══════════════════ Phase 4: 工具 ═══════════════════
-    emit("tools", 55, "分析工具需求...")
+    # ═══════════════════ Phase B: 工具 ═══════════════════
+    emit("tools", 50, "分析工具需求...")
     from compiler.multi_analyzer import TOOLS_PROMPT
-    tools = call_llm(TOOLS_PROMPT)
+    entity_summary = make_entity_summary(comprehensive)
+    tools_prompt = TOOLS_PROMPT.replace("{entity_summary}", entity_summary)
+    tools = call_llm(tools_prompt,
+                     messages=[{"role": "user", "content": full_text},
+                               {"role": "user", "content": entity_summary}])
     tool_count = len(tools.get("tool_specs", []))
     emit("tools", 65, f"{tool_count} 工具")
 
-    # ═══════════════════ Phase 5: 校验 ═══════════════════
-    from compiler.multi_analyzer import merge_results, VALIDATE_PROMPT
+    # 合并 → analysis（原始章节从 parser 直接传入，不走 LLM 输出）
+    sections_list = [{"title": t, "text": txt} for t, txt in sections.items()]
+    analysis = comprehensive_to_analysis(comprehensive, sections=sections_list)
+    analysis.tool_specs = [
+        ts for ts in (tools.get("tool_specs") or []) if isinstance(ts, dict)
+    ]
 
-    analysis = merge_results(entity, rules, structure, tools)
-    game_name = analysis.game_name
-    entity["game_name"] = game_name  # 回传
+    # ═══════════════════ Phase C: 校验 + 修正 ═══════════════════
+    from compiler.multi_analyzer import VALIDATE_PROMPT
+    summary = make_analysis_summary(comprehensive)
+    summary_data = _json.loads(summary)
+    summary_data["tool_specs_count"] = tool_count
+    analysis_summary = _json.dumps(summary_data, ensure_ascii=False, indent=2)
+    validate_prompt = VALIDATE_PROMPT.replace("{analysis_summary}", analysis_summary)
 
     max_rounds = 2
     best_analysis = analysis
     best_score = 0
+    errors = []
 
     for round_idx in range(max_rounds + 1):
         emit("validate", 70 + round_idx * 10, "校验中...")
-        validate_input = full_text + "\n\n## 当前分析结果\n" + _json.dumps({
-            "npcs": entity.get("npcs", [])[:20],
-            "locations": entity.get("locations", [])[:20],
-            "absolute_bans": rules.get("absolute_bans", []),
-            "phases": structure.get("phases", []),
-            "tool_specs": tools.get("tool_specs", []),
-        }, ensure_ascii=False)
-
-        validation = call_llm(VALIDATE_PROMPT + "\n\n输入数据:\n" + validate_input,
-                             max_tokens=1500, temperature=0.1)
+        validate_input = full_text + "\n\n## 当前分析结果\n" + analysis_summary
+        validation = call_llm(validate_prompt + "\n\n输入数据:\n" + validate_input,
+                             temperature=0.1)
         if not validation:
-            emit("validate", 80, "校验调用失败，跳过")
+            emit("validate", 80, "校验调用失败")
             break
 
         passed = validation.get("passed", False)
@@ -122,62 +139,56 @@ def compile(input_file: str, output_dir: str, feedback: str = "",
 
         if score > best_score:
             best_score = score
-            best_analysis = merge_results(entity, rules, structure, tools)
+            best_analysis = SchemaAnalysis(
+                game_name=analysis.game_name, genre=analysis.genre, tone=analysis.tone,
+                player_style=analysis.player_style,
+                entities=analysis.entities, mechanics=analysis.mechanics,
+                narrative=analysis.narrative, rules=analysis.rules,
+                randomness=analysis.randomness, state_fields=analysis.state_fields,
+                tool_specs=analysis.tool_specs,
+            )
 
         if passed or round_idx >= max_rounds or not errors:
             break
 
-        # ── 自动修正（只对未通过的 Phase 重新提取）─
         emit("correct", 75 + round_idx * 10, f"修正 {len(errors)} 个问题...")
         error_text = serialize_errors(errors)
         batch_text = f"## 上次分析的错误（必须修正）\n{error_text}"
-        fixed_phases = set()
 
+        fixed_phases = set()
         for e in errors:
             phase_id = e.get("phase", 1)
-            if phase_id in fixed_phases:
-                continue
+            if phase_id in fixed_phases: continue
             fixed_phases.add(phase_id)
             if phase_id == 1:
-                entity = call_llm(ENTITY_PROMPT,
-                                  messages=[{"role": "user", "content": full_text},
-                                            {"role": "user", "content": batch_text}])
+                comprehensive = call_llm(COMPREHENSIVE_PROMPT,
+                    messages=[{"role": "user", "content": full_text},
+                              {"role": "user", "content": batch_text}])
+                analysis = comprehensive_to_analysis(comprehensive)
             elif phase_id == 2:
-                rules = call_llm(RULES_PROMPT,
-                                 messages=[{"role": "user", "content": full_text},
-                                           {"role": "user", "content": batch_text}])
-            elif phase_id == 3:
-                structure = call_llm(STRUCTURE_PROMPT,
-                                     messages=[{"role": "user", "content": full_text},
-                                               {"role": "user", "content": batch_text}])
-            elif phase_id == 4:
-                tools = call_llm(TOOLS_PROMPT,
-                                 messages=[{"role": "user", "content": full_text},
-                                           {"role": "user", "content": batch_text}])
+                tools = call_llm(tools_prompt,
+                    messages=[{"role": "user", "content": full_text},
+                              {"role": "user", "content": entity_summary},
+                              {"role": "user", "content": batch_text}])
+                analysis.tool_specs = [
+                    ts for ts in (tools.get("tool_specs") or []) if isinstance(ts, dict)
+                ]
 
-    # 使用最佳结果
-    analysis = best_analysis
+    if best_score:
+        analysis = best_analysis
 
     if round_idx >= max_rounds and errors:
-        emit("validate", 85,
-             f"[WARN] 最佳评分:{best_score}, {len(errors)} 问题未修复")
+        emit("validate", 85, f"[WARN] 最佳评分:{best_score}")
 
-    # ═══════════════════ Phase 7: 映射 + 生成 ═══════════════════
-    emit("map", 88, "映射 Schema...")
+    # ═══════════════════ 映射 + 生成 ═══════════════════
+    emit("map", 90, "映射 Schema...")
     spec = map_to_spec(analysis)
-    emit("map", 90, f"{len(spec.lorebook_entries)} 条目")
+    emit("map", 93, f"{len(spec.lorebook_entries)} 条目")
 
-    emit("generate", 92, "生成文件...")
+    emit("generate", 95, "生成文件...")
     generate(spec, output_path)
-    emit("generate", 98, "Done")
+    emit("generate", 99, "Done")
 
-    # 质量评分
-    emit("validate", 100, "最终校验...")
-    report = validate(spec, output_path, llm)
-    max_score = sum(c.get("score", 0) for c in report.checks)
-    pct = int(report.overall_score / max_score * 100) if max_score > 0 else 0
-
-    emit("done", 100, f"'{game_name}' 评分:{pct}%")
-
+    emit("done", 100, f"'{analysis.game_name}' 评分:{best_score or '?'}%")
     llm.close()
     return str(output_path)
