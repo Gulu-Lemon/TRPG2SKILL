@@ -24,6 +24,8 @@ COMPREHENSIVE_PROMPT = """你是 TRPG 剧本分析师。请阅读以下世界书
 - items: [{name, description, effects}]。原文是编号/项目符号列表的，逐项列出而非概括。叙事描述的按原文信息量如实提取。
 - factions: [{name, description, members}]
 
+- state_fields: [{name, type, default}] — 识别游戏需要跨轮次追踪的自定义状态字段（如金钱、体力、好感度、情绪、时间等）。type 填 int/string，default 填默认值。
+
 **注意**：原文已经被切分为章节并直接提供给你了。输出中**不需要**再输出 `section_texts`，把所有输出预算留给更重要的实体、规则和阶段提取。
 
 ## 任务 2: 规则与约束
@@ -70,7 +72,8 @@ COMPREHENSIVE_PROMPT = """你是 TRPG 剧本分析师。请阅读以下世界书
   "dice_system": "none", "has_affection": false, "has_inventory": false,
   "player_style": "player_driven",
   "need_npc_roller": false, "need_event_roller": false,
-  "need_location_roller": false, "need_item_roller": false
+  "need_location_roller": false, "need_item_roller": false,
+  "state_fields": [{"name": "金钱", "type": "int", "default": "0"}]
 }
 """
 

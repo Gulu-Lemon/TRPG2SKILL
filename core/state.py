@@ -211,6 +211,7 @@ class SkillSpec:
             "loop": [s.to_dict() for s in self.loop],
             "prompts": self.prompts,
             "phase_scripts": self.phase_scripts,
+            "state_fields": self.state_fields or [],
             "generated_at": self.generated_at,
         }
 

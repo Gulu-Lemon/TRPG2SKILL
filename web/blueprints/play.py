@@ -29,6 +29,8 @@ def _advance_once(gen):
     except StopIteration:
         return {"type": "_done_"}
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {"type": "error", "content": str(e)}
 
 
@@ -75,7 +77,7 @@ def load_game():
             llm = create_llm_from_profile()
             _engine = GameEngine(str(gd), llm)
         except Exception as e:
-            return {"error": f"加载失败: {e}"}, 500
+            return {"error": f"加载失败: {type(e).__name__}: {e}"}, 500
         _engine_gen = None
 
     return {"ok": True, "game_name": _engine.loop_schema.get("game_name", ""),
@@ -108,10 +110,14 @@ def narrate():
     evt = _advance_once(_engine_gen)
     waiting = evt['type'] == 'wait_input'
 
+    s = _engine.state
     return {"narrative": narrative,
-            "turn": _engine.state.turn,
-            "phase": _engine.state.phase,
-            "location": _engine.state.player_location,
+            "turn": s.turn, "day": s.day,
+            "phase": s.phase, "location": s.player_location,
+            "inventory": s.inventory[:10],
+            "flags": s.flags[-10:],
+            "custom": {k: v for k, v in s.custom.items()
+                       if k not in ("routed_tool", "last_tool_result")},
             "waiting": waiting}
 
 
@@ -150,10 +156,14 @@ def player_input():
     evt = _advance_once(_engine_gen)
     waiting = evt['type'] == 'wait_input'
 
+    s = _engine.state
     return {"narrative": narrative,
-            "turn": _engine.state.turn,
-            "phase": _engine.state.phase,
-            "location": _engine.state.player_location,
+            "turn": s.turn, "day": s.day,
+            "phase": s.phase, "location": s.player_location,
+            "inventory": s.inventory[:10],
+            "flags": s.flags[-10:],
+            "custom": {k: v for k, v in s.custom.items()
+                       if k not in ("routed_tool", "last_tool_result")},
             "waiting": waiting}
 
 
@@ -163,9 +173,13 @@ def get_state():
     if not _engine:
         return {"error": "无活动游戏"}, 400
     s = _engine.state
+    state_fields = _engine.loop_schema.get("state_fields", [])
     return {"turn": s.turn, "day": s.day, "phase": s.phase,
-            "location": s.player_location, "inventory": s.inventory,
-            "flags": s.flags, "npcs": list(s.npcs.keys())[:10]}
+            "location": s.player_location, "inventory": s.inventory[:20],
+            "flags": s.flags[-20:], "npcs": list(s.npcs.keys())[:10],
+            "custom": {k: v for k, v in s.custom.items()
+                       if k not in ("routed_tool", "last_tool_result")},
+            "state_fields": state_fields}
 
 
 @play_bp.route("/reset", methods=["POST"])

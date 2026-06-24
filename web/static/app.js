@@ -255,10 +255,20 @@ function openEditPanel(tab) {
 function switchEditTab(tab) {
     S._editTab = tab;
     document.querySelectorAll('.edit-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.editTab === tab); });
-    if (tab === 'bans') loadBansToPanel();
-    else if (tab === 'lorebook') loadLorebookToPanel();
-    else if (tab === 'toolpool') loadToolPoolToPanel();
-    else if (tab === 'agents') loadAgentsToPanel();
+    var editContent = document.getElementById('edit-content');
+    var statusPanel = document.getElementById('status-panel');
+    if (tab === 'status') {
+        editContent.style.display = 'none';
+        statusPanel.style.display = 'block';
+        loadStatusToPanel();
+    } else {
+        editContent.style.display = 'block';
+        statusPanel.style.display = 'none';
+        if (tab === 'bans') loadBansToPanel();
+        else if (tab === 'lorebook') loadLorebookToPanel();
+        else if (tab === 'toolpool') loadToolPoolToPanel();
+        else if (tab === 'agents') loadAgentsToPanel();
+    }
 }
 
 // ── Bans ──
@@ -444,6 +454,65 @@ function loadAgentsToPanel() {
             '<textarea id="agents-edit" class="edit-area" style="min-height:300px">' + escapeHtml(data.text || '') + '</textarea>' +
             '<button onclick="saveAgentsEdit()" style="margin-top:6px">保存 AGENTS.md</button>' +
             '<span style="font-size:11px;color:var(--text2);margin-left:8px">保存后继续游戏自动生效</span>';
+    });
+}
+
+function loadStatusToPanel() {
+    var panel = document.getElementById('status-panel');
+    if (!S.gameLoaded) {
+        panel.innerHTML = '<div style="color:var(--text2);padding:20px;text-align:center">未加载游戏</div>';
+        return;
+    }
+    fetch('/api/play/state').then(function(r) { return r.json(); }).then(function(data) {
+        if (data.error) { panel.innerHTML = '<div style="color:var(--red)">' + escapeHtml(data.error) + '</div>'; return; }
+        var lines = [];
+        lines.push('<table style="width:100%;border-collapse:collapse">');
+        var stdFields = [
+            ['轮次', data.turn], ['天数', data.day], ['阶段', data.phase], ['位置', data.location]
+        ];
+        stdFields.forEach(function(f) {
+            lines.push('<tr><td style="color:var(--text2);width:50px;padding:3px 6px">' + f[0] + '</td><td style="padding:3px 6px">' + escapeHtml(String(f[1] || '')) + '</td></tr>');
+        });
+        if (data.inventory && data.inventory.length) {
+            lines.push('<tr><td style="color:var(--text2);padding:3px 6px">持有</td><td style="padding:3px 6px">' + escapeHtml(data.inventory.join(', ')) + '</td></tr>');
+        }
+        lines.push('</table>');
+
+        // 自定义字段（优先按 state_fields 顺序，再补 custom 中的额外字段）
+        var customKeys = [];
+        var sf = data.state_fields || [];
+        var seen = {};
+        sf.forEach(function(f) {
+            customKeys.push(f.name);
+            seen[f.name] = true;
+        });
+        var custom = data.custom || {};
+        Object.keys(custom).forEach(function(k) {
+            if (!seen[k]) { customKeys.push(k); seen[k] = true; }
+        });
+        if (customKeys.length) {
+            lines.push('<div style="border-top:1px solid var(--border);margin:6px 0 4px;font-size:11px;color:var(--text2)">游戏数据</div>');
+            lines.push('<table style="width:100%;border-collapse:collapse">');
+            customKeys.forEach(function(k) {
+                var v = custom[k] !== undefined ? custom[k] : '';
+                var sfDef = null;
+                sf.forEach(function(f) { if (f.name === k) sfDef = f; });
+                lines.push('<tr><td style="color:var(--text2);width:50px;padding:3px 6px">' + escapeHtml(k) + '</td><td style="padding:3px 6px">' + escapeHtml(String(v)) + '</td></tr>');
+            });
+            lines.push('</table>');
+        }
+
+        if (data.flags && data.flags.length) {
+            lines.push('<div style="border-top:1px solid var(--border);margin:6px 0 4px;font-size:11px;color:var(--text2)">标记</div>');
+            lines.push('<div style="display:flex;flex-wrap:wrap;gap:4px">');
+            data.flags.forEach(function(f) {
+                lines.push('<span style="background:var(--border);padding:2px 6px;border-radius:3px;font-size:11px">' + escapeHtml(f) + '</span>');
+            });
+            lines.push('</div>');
+        }
+        panel.innerHTML = lines.join('');
+    }).catch(function(err) {
+        panel.innerHTML = '<div style="color:var(--red)">加载失败: ' + escapeHtml(err.message) + '</div>';
     });
 }
 
@@ -799,6 +868,7 @@ function nextRound() {
         if (data.error) { alert(data.error); return; }
         appendNarrative(data.narrative);
         if (data.waiting) document.getElementById('player-input').focus();
+        loadStatusToPanel();
     }).catch(function(err) {
         removeLoadingBubble();
         alert('错误: ' + (err.message || err));
@@ -908,6 +978,7 @@ function sendInput() {
         appendNarrative(data.narrative);
         updateGameInfo(data);
         if (data.waiting) document.getElementById('player-input').focus();
+        loadStatusToPanel();
     }).catch(function(err) {
         removeLoadingBubble();
         alert('错误: ' + (err.message || err));

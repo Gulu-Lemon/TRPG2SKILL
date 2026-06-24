@@ -44,7 +44,7 @@ class GameEngine:
         self.phase_scripts = self.loop_schema.get("phase_scripts", {})
         self.narrative_prompt_template = self.loop_schema.get("prompts", {}).get("narrative_prompt", "")
         self.agent_tools = self.loop_schema.get("agent_tools") or []
-        # 内置工具：始终注入 advance_phase
+        # 内置工具
         self.agent_tools.append({
             "type": "function",
             "function": {
@@ -56,6 +56,21 @@ class GameEngine:
                         "target": {"type": "string", "description": "目标阶段名，留空则自动进入下一个阶段"}
                     },
                     "required": []
+                }
+            }
+        })
+        self.agent_tools.append({
+            "type": "function",
+            "function": {
+                "name": "set_state",
+                "description": "更新游戏状态变量。用于记录金钱、体力、情绪、时间等游戏特有数据。变量值统一用字符串。",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "key": {"type": "string", "description": "变量名"},
+                        "value": {"type": "string", "description": "变量值"}
+                    },
+                    "required": ["key", "value"]
                 }
             }
         })
@@ -327,6 +342,14 @@ class GameEngine:
             entries = [e for e in self.lorebook.entries.values() if e.type == 'npc']
             return {"npcs": [{"name": e.title, "brief": e.content[:100]} for e in entries[:20]],
                     "total": len(entries)}
+
+        elif name == "set_state":
+            key = args.get("key", "")
+            value = args.get("value", "")
+            if key:
+                self.state.custom[key] = value
+                return {"ok": True, "key": key, "value": value}
+            return {"error": "key is required"}
 
         elif name == "advance_phase":
             target = args.get("target", "")
