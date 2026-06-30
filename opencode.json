@@ -1,0 +1,39 @@
+{
+  "agent": {
+    "max_steps": 100,
+    "model": "opencode-go/deepseek-v4-flash"
+  },
+  "permissions": {
+    "tools": {
+      "bash": "allow",
+      "edit": "allow",
+      "write": "allow",
+      "read": "allow",
+      "grep": "allow",
+      "glob": "allow",
+      "skill": "allow",
+      "todowrite": "allow"
+    }
+  },
+  "commands": [
+    {
+      "name": "fix-critical",
+      "description": "运行闭环: 自动修复所有 Critical 问题",
+      "command": "运行闭环修复: 使用 trpg-discover skill 扫描 issues/ 中的 Critical 问题，按优先级逐个修复。每修复一个运行 pytest 验证。更新 STATE.md。最多迭代 20 轮。"
+    },
+    {
+      "name": "daily-loop",
+      "description": "每日开环: 检查新问题并持续改进",
+      "command": "运行每日循环: 1) 检查 issues/ 中的新报告 2) 运行测试覆盖分析 3) 对失败的模块生成改进计划 4) 执行改进 5) 更新 STATE.md"
+    },
+    {
+      "name": "nightly-loop",
+      "description": "夜间开环: 代码库健康度维护",
+      "command": "运行夜间循环: 1) 检查 issues/ 中的 Suggestion 问题 2) 按优先级修复 3) 运行完整测试 4) 更新 STATE.md"
+    }
+  ],
+  "customTools": ["tools/loop_controller.py"],
+  "skills": {
+    "allow": ["trpg-discover", "trpg-compile", "trpg-verify", "trpg-debug"]
+  }
+}

@@ -1,0 +1,339 @@
+/* TRPG-to-SKILL — 虹彩流体主题 (Liquid Glass / Chromatic) */
+:root {
+    --bg: #0a0a14;
+    --bg2: rgba(20, 15, 40, 0.45);
+    --bg3: rgba(100, 60, 180, 0.18);
+    --accent: #a855f7;
+    --accent2: rgba(255, 105, 180, 0.35);
+    --text: #e8e0f0;
+    --text2: rgba(200, 180, 220, 0.55);
+    --green: #44ee88;
+    --yellow: #ffcc44;
+    --red: #ff5577;
+    --panel-bg: rgba(10, 10, 20, 0.4);
+    --border: rgba(255, 255, 255, 0.07);
+    --font: 'Segoe UI', system-ui, sans-serif;
+    --overlay-bg: rgba(0, 0, 0, 0.55);
+    --loading-bg: rgba(10, 10, 20, 0.92);
+    --btn-text: #fff;
+    --danger-hover: #ee3366;
+}
+
+body {
+    background:
+        radial-gradient(ellipse 60% 50% at 20% 10%, rgba(168, 85, 247, 0.12), transparent),
+        radial-gradient(ellipse 50% 60% at 80% 30%, rgba(255, 105, 180, 0.08), transparent),
+        radial-gradient(ellipse 55% 45% at 50% 70%, rgba(88, 166, 255, 0.07), transparent),
+        radial-gradient(ellipse 40% 40% at 40% 50%, rgba(68, 238, 136, 0.04), transparent),
+        #0a0a14;
+    background-size: 300% 300%;
+    background-attachment: fixed;
+    animation: gradientFlow 15s ease infinite;
+}
+
+#topbar {
+    background: rgba(10, 10, 20, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+}
+#topbar .logo {
+    color: var(--accent);
+    font-weight: 600;
+    background: linear-gradient(135deg, #a855f7, #ff69b4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+#topbar .tab-btn {
+    color: var(--text2);
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: color 0.25s, border-color 0.25s, background 0.25s;
+}
+#topbar .tab-btn:hover { color: #d0c0f0; }
+#topbar .tab-btn.active {
+    background: rgba(168, 85, 247, 0.1);
+    color: var(--accent);
+    border-color: rgba(168, 85, 247, 0.2);
+}
+
+#center-panel { background: transparent; }
+.tab-content.active { background: transparent; }
+#play-tab { background: transparent; }
+
+.settings-section {
+    background: rgba(20, 15, 40, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-left: 3px solid var(--accent);
+    border-radius: 14px;
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.25);
+}
+.settings-section h3 {
+    color: var(--accent);
+    font-weight: 600;
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+#narrative-area {
+    font-size: 15px;
+    line-height: 1.8;
+    background: transparent;
+}
+
+#player-input, #compile-input, #compile-name, .profile-form input {
+    background: rgba(20, 15, 40, 0.25);
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    backdrop-filter: blur(10px) saturate(160%);
+    -webkit-backdrop-filter: blur(10px) saturate(160%);
+    transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+}
+#player-input:focus, #compile-input:focus {
+    background: rgba(20, 15, 40, 0.45);
+    border-color: var(--accent);
+    box-shadow:
+        0 0 0 3px rgba(168, 85, 247, 0.12),
+        0 0 20px rgba(168, 85, 247, 0.1),
+        0 0 40px rgba(255, 105, 180, 0.05);
+    outline: none;
+}
+
+.btn-icon {
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    backdrop-filter: blur(10px) saturate(150%);
+    -webkit-backdrop-filter: blur(10px) saturate(150%);
+    background: rgba(168, 85, 247, 0.06);
+    transition: background 0.25s, border-color 0.25s, box-shadow 0.25s;
+}
+.btn-icon:hover {
+    background: rgba(168, 85, 247, 0.14);
+    border-color: rgba(168, 85, 247, 0.3);
+    box-shadow: 0 0 16px rgba(168, 85, 247, 0.12);
+}
+.btn-icon.btn-danger {
+    background: rgba(255, 85, 119, 0.06);
+    border-color: rgba(255, 85, 119, 0.18);
+    color: var(--red);
+}
+.btn-icon.btn-danger:hover {
+    background: rgba(255, 85, 119, 0.14);
+    border-color: rgba(255, 85, 119, 0.3);
+}
+
+#compile-submit, #send-btn {
+    background: linear-gradient(135deg, #a855f7, #ff69b4);
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    border-radius: 14px;
+    box-shadow: 0 0 24px rgba(168, 85, 247, 0.3), 0 0 8px rgba(255, 105, 180, 0.15);
+    transition: box-shadow 0.25s, transform 0.15s;
+}
+#compile-submit:hover, #send-btn:hover {
+    box-shadow: 0 0 32px rgba(168, 85, 247, 0.45), 0 0 16px rgba(255, 105, 180, 0.25);
+    transform: translateY(-1px);
+}
+
+.lorebook-entry {
+    padding: 10px 12px; margin-bottom: 6px;
+    background: rgba(20, 15, 40, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px; cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background 0.25s, border-color 0.25s;
+}
+.lorebook-entry:hover {
+    background: rgba(20, 15, 40, 0.5);
+    border-color: rgba(168, 85, 247, 0.25);
+}
+
+.slot-item {
+    padding: 10px; margin-bottom: 6px;
+    background: rgba(20, 15, 40, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.panel-drawer {
+    background: rgba(10, 10, 20, 0.85);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: -4px 0 40px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(28px) saturate(200%);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
+}
+
+#progress-bar {
+    border-radius: 3px;
+    background: linear-gradient(90deg, #a855f7, #ff69b4, #58a6ff);
+    box-shadow: 0 0 16px rgba(168, 85, 247, 0.4);
+}
+
+.theme-option {
+    background: rgba(20, 15, 40, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    color: var(--text2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+.theme-option:hover { border-color: var(--accent); }
+.theme-option.active {
+    background: rgba(168, 85, 247, 0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+#input-row {
+    background: rgba(10, 10, 20, 0.35);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 12px 0 0 0;
+    margin-top: 6px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+#play-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 10px;
+}
+#play-header .game-name {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.player-msg {
+    background: linear-gradient(135deg, #a855f7, #ff69b4);
+    color: #fff;
+    border-radius: 14px 14px 4px 14px;
+    box-shadow: 0 2px 16px rgba(168, 85, 247, 0.2);
+}
+.gm-msg {
+    background: rgba(20, 15, 40, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px 14px 14px 4px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+.gm-msg .gm-actions {
+    background: rgba(10, 10, 20, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+.gm-msg .gm-actions button {
+    background: rgba(168, 85, 247, 0.08);
+    color: var(--text2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+}
+.gm-msg .gm-actions button:hover { color: var(--accent); border-color: var(--accent); }
+
+.loading-msg {
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    color: var(--text2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.system-msg {
+    background: rgba(168, 85, 247, 0.04);
+    border-left: 2px solid rgba(168, 85, 247, 0.25);
+    border-radius: 0 6px 6px 0;
+}
+
+.config-row { border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.config-row label { color: var(--text2); }
+
+.edit-tab {
+    border-bottom: 2px solid transparent;
+    transition: color 0.25s, border-color 0.25s;
+}
+.edit-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.edit-item {
+    background: rgba(20, 15, 40, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.game-card {
+    background: rgba(20, 15, 40, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+}
+.game-card:hover {
+    border-color: var(--accent);
+    background: rgba(20, 15, 40, 0.5);
+}
+
+#lorebook-panel {
+    background: rgba(10, 10, 20, 0.8);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 12px;
+    overflow-y: auto;
+    width: 260px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+#lorebook-panel.show { display: block; }
+
+#loading-overlay .spinner {
+    border-color: rgba(255, 255, 255, 0.06);
+    border-top-color: var(--accent);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+}
+
+select.edit-input {
+    background: rgba(20, 15, 40, 0.25);
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+}
+
+.settings-section h3, #play-header .game-name {
+    background: linear-gradient(135deg, #a855f7, #ff69b4, #58a6ff, #44ee88);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientFlow 10s ease infinite;
+}
+
+.btn-icon, .lorebook-entry, .game-card {
+    transition: box-shadow 0.3s, border-color 0.3s, transform 0.2s;
+}
+.btn-icon:hover, .lorebook-entry:hover, .game-card:hover {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.15), 0 0 4px rgba(255, 105, 180, 0.1);
+}
+
+:root {
+    --elevation-sm: 0 1px 6px rgba(0,0,0,0.15);
+    --elevation-md: 0 4px 16px rgba(0,0,0,0.2);
+    --elevation-lg: 0 8px 30px rgba(0,0,0,0.3);
+    --elevation-xl: 0 16px 50px rgba(0,0,0,0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body { animation: none; }
+    .settings-section h3 { animation: none; }
+}
+
+@keyframes gradientFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(600px circle at var(--mx, 50%) var(--my, 50%), rgba(168,85,247,0.06), transparent 70%);
+}

@@ -9,6 +9,8 @@ from flask import Blueprint, request
 save_bp = Blueprint("save", __name__)
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
+from web.security import safe_path
+
 
 def _get_saves_dir():
     from web.blueprints.play import _engine
@@ -26,7 +28,10 @@ def list_slots():
     # 支持直接查看指定目录的存档
     dir_param = request.args.get("dir", "")
     if dir_param:
-        saves_dir = pathlib.Path(dir_param)
+        try:
+            saves_dir = safe_path(dir_param)
+        except ValueError as e:
+            return {"error": str(e)}, 403
         if not saves_dir.exists():
             return {"slots": []}
 

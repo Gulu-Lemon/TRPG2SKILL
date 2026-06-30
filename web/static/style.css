@@ -148,6 +148,19 @@ body {
 #play-header .game-name { font-size: 18px; font-weight: bold; color: var(--accent); }
 #play-header .game-info { font-size: 13px; color: var(--text2); }
 
+#play-hud {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 6px 0 8px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0; font-size: 12px;
+}
+.hud-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.hud-badge {
+    background: var(--bg3); color: var(--text);
+    padding: 2px 8px; border-radius: 3px; white-space: nowrap;
+}
+.hud-meta { font-size: 11px; color: var(--text2); gap: 12px; }
+.hud-meta span:empty { display: none; }
+
 #narrative-area {
     flex: 1; overflow-y: auto; padding: 12px 0;
     line-height: 1.8; font-size: 15px;

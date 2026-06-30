@@ -1,0 +1,117 @@
+"""
+state_cli.py — 存档管理工具
+
+用法:
+    python tools/state_cli.py save [name]     # 保存到指定槽位
+    python tools/state_cli.py load [name]     # 从指定槽位读取
+    python tools/state_cli.py list            # 列出所有存档
+    python tools/state_cli.py delete [name]   # 删除存档
+"""
+import sys
+import json
+import os
+import time
+
+SAVES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "saves")
+AUTOSAVE = os.path.join(SAVES_DIR, "autosave.json")
+
+
+def save(name=None):
+    """保存当前状态到指定槽位"""
+    os.makedirs(SAVES_DIR, exist_ok=True)
+    
+    if not os.path.exists(AUTOSAVE):
+        return {"ok": False, "error": "无自动存档"}
+    
+    if name:
+        dest = os.path.join(SAVES_DIR, f"slot_{name}.json")
+    else:
+        dest = os.path.join(SAVES_DIR, f"slot_{time.strftime('%Y%m%d_%H%M%S')}.json")
+    
+    with open(AUTOSAVE, "r", encoding="utf-8") as src:
+        data = json.load(src)
+    
+    data["saved_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    
+    with open(dest, "w", encoding="utf-8") as dst:
+        json.dump(data, dst, ensure_ascii=False, indent=2)
+    
+    return {"ok": True, "path": dest}
+
+
+def load(name=None):
+    """从指定槽位读取"""
+    if name:
+        src = os.path.join(SAVES_DIR, f"slot_{name}.json")
+    else:
+        files = sorted(
+            [f for f in os.listdir(SAVES_DIR) if f.startswith("slot_") and f.endswith(".json")],
+            reverse=True
+        )
+        if not files:
+            return {"ok": False, "error": "无存档"}
+        src = os.path.join(SAVES_DIR, files[0])
+    
+    if not os.path.exists(src):
+        return {"ok": False, "error": f"存档不存在: {name}"}
+    
+    with open(src, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    
+    with open(AUTOSAVE, "w", encoding="utf-8") as dst:
+        json.dump(data, dst, ensure_ascii=False, indent=2)
+    
+    return {"ok": True, "state": data}
+
+
+def list_saves():
+    """列出所有存档"""
+    saves = []
+    for f in sorted(os.listdir(SAVES_DIR), reverse=True):
+        if f.endswith(".json"):
+            path = os.path.join(SAVES_DIR, f)
+            try:
+                with open(path, "r", encoding="utf-8") as fh:
+                    data = json.load(fh)
+                saves.append({
+                    "name": f.replace(".json", ""),
+                    "turn": data.get("turn", 0),
+                    "phase": data.get("phase", ""),
+                    "date": data.get("saved_at", data.get("updated_at", "")),
+                })
+            except Exception:
+                pass
+    return saves
+
+
+def delete(name):
+    path = os.path.join(SAVES_DIR, f"slot_{name}.json")
+    if os.path.exists(path):
+        os.remove(path)
+        return {"ok": True}
+    return {"ok": False, "error": "存档不存在"}
+
+
+def main():
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+    
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "list"
+    arg = sys.argv[2] if len(sys.argv) > 2 else None
+    
+    if cmd == "save":
+        result = save(arg)
+    elif cmd == "load":
+        result = load(arg)
+    elif cmd == "list":
+        result = list_saves()
+    elif cmd == "delete":
+        result = delete(arg)
+    else:
+        result = {"ok": False, "error": f"未知命令: {cmd}"}
+    
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()

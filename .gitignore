@@ -1,8 +1,9 @@
 config_profiles.json
-generated/
+skills_generated/
 generated_tmp/
 logs/
 issues/
+autoplay/
 *.pyc
 __pycache__/
 *.spec

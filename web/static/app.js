@@ -284,14 +284,14 @@ function loadBansToPanel() {
                 '<div class="ei-title">' + (i+1) + '. ' + escapeHtml(b.title) + '</div>' +
                 '<div class="ei-text">' + escapeHtml(b.text) + '</div>' +
                 '<div class="ei-actions">' +
-                '<button onclick="editBanItem(' + i + ')">编辑</button>' +
-                '<button class="btn-danger" onclick="deleteBanItem(' + i + ')">×</button>' +
+                '<button class="btn-icon" onclick="editBanItem(' + i + ')">编辑</button>' +
+                '<button class="btn-icon btn-danger" onclick="deleteBanItem(' + i + ')">×</button>' +
                 '</div></div>';
         });
         html += '<div style="display:flex;gap:6px;margin-top:8px">' +
-            '<button onclick="newBanItem()">+ 新建</button>' +
-            '<button onclick="smartDedupBans()">智能去重</button>' +
-            '<button onclick="saveBansPanel()">保存全部</button></div>';
+            '<button class="btn-icon" onclick="newBanItem()">+ 新建</button>' +
+            '<button class="btn-icon" onclick="smartDedupBans()">智能去重</button>' +
+            '<button class="btn-icon" onclick="saveBansPanel()">保存全部</button></div>';
         document.getElementById('edit-content').innerHTML = html;
         S._editCache = {bans: bans};
     });
@@ -357,9 +357,9 @@ function loadLorebookToPanel() {
             '<input id="lorebook-title" class="edit-input" placeholder="标题">' +
             '<textarea id="lorebook-content" class="edit-area" placeholder="内容"></textarea>' +
             '<div style="display:flex;gap:6px">' +
-            '<button onclick="saveLorebookEdit()">保存</button>' +
-            '<button onclick="newLorebookEntry()">+ 新建</button>' +
-            '<button class="btn-danger" onclick="deleteLorebookEntry()">删除</button></div>';
+            '<button class="btn-icon" onclick="saveLorebookEdit()">保存</button>' +
+            '<button class="btn-icon" onclick="newLorebookEntry()">+ 新建</button>' +
+            '<button class="btn-icon btn-danger" onclick="deleteLorebookEntry()">删除</button></div>';
         document.getElementById('edit-content').innerHTML = html;
     });
 }
@@ -414,7 +414,7 @@ function loadToolPoolToPanel() {
     document.getElementById('edit-content').innerHTML =
         '<input id="toolpool-name" class="edit-input" placeholder="工具文件名 (如 encounter_roller.py)">' +
         '<textarea id="toolpool-json" class="edit-area" style="min-height:200px" placeholder="JSON数据池"></textarea>' +
-        '<div style="display:flex;gap:6px"><button onclick="fetchToolPool()">加载</button><button onclick="saveToolPool()">保存</button></div>';
+        '<div style="display:flex;gap:6px"><button class="btn-icon" onclick="fetchToolPool()">加载</button><button class="btn-icon" onclick="saveToolPool()">保存</button></div>';
 }
 
 function fetchToolPool() {
@@ -452,7 +452,7 @@ function loadAgentsToPanel() {
     .then(r => r.json()).then(function(data) {
         document.getElementById('edit-content').innerHTML =
             '<textarea id="agents-edit" class="edit-area" style="min-height:300px">' + escapeHtml(data.text || '') + '</textarea>' +
-            '<button onclick="saveAgentsEdit()" style="margin-top:6px">保存 AGENTS.md</button>' +
+            '<button class="btn-icon" onclick="saveAgentsEdit()" style="margin-top:6px">保存 AGENTS.md</button>' +
             '<span style="font-size:11px;color:var(--text2);margin-left:8px">保存后继续游戏自动生效</span>';
     });
 }
@@ -600,7 +600,8 @@ function loadGameList() {
 
         Object.keys(groups).forEach(function(pathKey) {
             var isHidden = hidden._paths && hidden._paths[pathKey];
-            var isPermanent = pathKey.endsWith('generated') || pathKey.replace(/\\/g,'/').endsWith('generated');
+            var _pk = pathKey.replace(/\\/g,'/');
+            var isPermanent = _pk.endsWith('skills_generated') || _pk.endsWith('skills');
             var isCustom = !isPermanent && customPaths.indexOf(pathKey) >= 0;
             var skills = groups[pathKey];
             var visSkills = skills.filter(function(s) { return !hidden[s.path]; });
@@ -843,10 +844,16 @@ function startPlaySession(gameName, loadData) {
     if (loadData) {
         updateGameInfo(loadData);
         renderHistory(loadData.history || []);
+        // 加载存档：只跑一次调度器刷新面板，跳过 LLM，停在等待输入
+        fetch('/api/play/resume', { method: 'POST' }).then(function(r) { return r.json(); }).then(function(data) {
+            updateGameInfo(data);
+            loadStatusToPanel();
+            document.getElementById('player-input').focus();
+        });
     } else {
         document.getElementById('game-info-display').textContent = '轮: 0';
+        nextRound();
     }
-    nextRound();
 }
 
 function backToGameList() {
@@ -867,6 +874,7 @@ function nextRound() {
         removeLoadingBubble();
         if (data.error) { alert(data.error); return; }
         appendNarrative(data.narrative);
+        updateGameInfo(data);
         if (data.waiting) document.getElementById('player-input').focus();
         loadStatusToPanel();
     }).catch(function(err) {
@@ -881,7 +889,8 @@ function appendNarrative(text) {
     var area = document.getElementById('narrative-area');
     var div = document.createElement('div');
     div.className = 'gm-msg';
-    div.textContent = text;
+    div.setAttribute('data-raw', text);
+    div.innerHTML = marked.parse(text);
     // 动作按钮
     var actions = document.createElement('div');
     actions.className = 'gm-actions';
@@ -909,10 +918,13 @@ function showLoadingBubble(text) {
 }
 
 function editNarrative(gmDiv) {
-    var current = gmDiv.textContent.replace(/✏️↩🔄/g, '').trim();
-    var result = prompt('编辑叙事:', current);
-    if (result !== null && result !== current) {
-        gmDiv.firstChild.textContent = result;
+    var raw = gmDiv.getAttribute('data-raw') || gmDiv.innerText.replace(/✏️↩🔄/g, '').trim();
+    var result = prompt('编辑叙事:', raw);
+    if (result !== null && result !== raw) {
+        gmDiv.setAttribute('data-raw', result);
+        var actions = gmDiv.querySelector('.gm-actions');
+        gmDiv.innerHTML = marked.parse(result);
+        if (actions) gmDiv.appendChild(actions);
     }
 }
 
@@ -986,9 +998,35 @@ function sendInput() {
 }
 
 function updateGameInfo(data) {
-    var info = '轮: ' + (data.turn || 0) + ' | ' + (data.phase || '');
-    if (data.location) info += ' | ' + data.location;
-    document.getElementById('game-info-display').textContent = info;
+    document.getElementById('hud-turn').textContent = '第' + (data.turn || '?') + '轮';
+    document.getElementById('hud-day').textContent = '第' + (data.day || '?') + '天';
+    document.getElementById('hud-phase').textContent = data.phase || '─';
+    document.getElementById('hud-location').textContent = data.location || '未知';
+    document.getElementById('game-info-display').textContent =
+        '轮: ' + (data.turn || 0) + ' | ' + (data.phase || '') +
+        (data.location ? ' | ' + data.location : '');
+
+    var sf = data.state_fields || [];
+    var custom = data.custom || {};
+    var fields = [];
+    sf.forEach(function(f) {
+        fields.push('<span class="hud-badge">' + f.name + ': ' + (custom[f.name] !== undefined ? custom[f.name] : '') + '</span>');
+    });
+    Object.keys(custom).forEach(function(k) {
+        if (k === 'routed_tool' || k === 'last_tool_result') return;
+        if (sf.some(function(f) { return f.name === k; })) return;
+        fields.push('<span class="hud-badge">' + k + ': ' + custom[k] + '</span>');
+    });
+    document.getElementById('hud-custom-fields').innerHTML = fields.join('');
+
+    var invParts = [];
+    if (data.inventory && data.inventory.length) invParts.push('物品: ' + data.inventory.join(', '));
+    if (data.npcs && data.npcs.length) invParts.push('NPC: ' + (typeof data.npcs[0] === 'string' ? data.npcs.join(', ') : ''));
+    document.getElementById('hud-inventory').textContent = invParts.join(' · ');
+
+    var flagParts = [];
+    if (data.flags && data.flags.length) flagParts.push('标记: ' + data.flags.join(' '));
+    document.getElementById('hud-flags').textContent = flagParts.join('');
 }
 
 // ═══════════════════ Settings ═══════════════════
@@ -1208,7 +1246,12 @@ function loadSave(name, gamePath) {
         document.getElementById('save-btn-top').style.display = 'inline-block';
         updateGameInfo(d);
         renderHistory(d.history || []);
-        nextRound();
+        // 加载存档后跳过 LLM，只刷新面板停在等待输入
+        fetch('/api/play/resume', { method: 'POST' }).then(function(r) { return r.json(); }).then(function(data) {
+            updateGameInfo(data);
+            loadStatusToPanel();
+            document.getElementById('player-input').focus();
+        });
     }).catch(function(e) {
         showLoading(false);
         alert('读取失败: ' + (e.message || e));
@@ -1255,7 +1298,7 @@ function renderHistory(history) {
         if (r.narrative) {
             var g = document.createElement('div');
             g.className = 'gm-msg';
-            g.textContent = r.narrative;
+            g.innerHTML = marked.parse(r.narrative);
             area.appendChild(g);
         }
         if (r.player_input) {
@@ -1336,21 +1379,32 @@ loadProfiles();
 initDragDrop();
 loadGameList();
 
+// ═══════════════════ Cursor spotlight ═══════════════════
+document.addEventListener('mousemove', function(e) {
+    document.documentElement.style.setProperty('--mx', e.clientX + 'px');
+    document.documentElement.style.setProperty('--my', e.clientY + 'px');
+});
+
 // ═══════════════════ Theme Switcher ═══════════════════
 
 var THEMES = [
-    { id: 'dark', name: '暗色', css: '/themes/dark.css' },
+    { id: 'paper', name: '\u7EB8\u8D28', css: '/themes/paper.css' },
+    { id: 'academia', name: '\u53E4\u7C4D', css: '/themes/academia.css' },
+    { id: 'organic', name: '\u81EA\u7136', css: '/themes/organic.css' },
+    { id: 'y2k', name: '\u5343\u79A7', css: '/themes/y2k.css' },
     { id: 'oled', name: 'OLED', css: '/themes/oled.css' },
-    { id: 'paper', name: '纸质', css: '/themes/paper.css' },
-    { id: 'glass', name: '玻璃', css: '/themes/glass.css' },
-    { id: 'cyberpunk', name: '赛博', css: '/themes/cyberpunk.css' },
+    { id: 'glass', name: '\u73BB\u7483', css: '/themes/glass.css' },
+    { id: 'cyberpunk', name: '\u8D5B\u535A', css: '/themes/cyberpunk.css' },
+    { id: 'pixel', name: '\u50CF\u7D20', css: '/themes/pixel.css' },
+    { id: 'liquid', name: '\u8679\u5F69', css: '/themes/liquid.css' },
+    { id: 'monochrome', name: '\u524D\u536B', css: '/themes/monochrome.css' },
 ];
 
 initThemeSwitcher();
 
 function initThemeSwitcher() {
     var html = '';
-    var saved = localStorage.getItem('trpg-theme') || 'dark';
+    var saved = localStorage.getItem('trpg-theme') || 'paper';
     THEMES.forEach(function(t) {
         html += '<label class="theme-option' + (t.id === saved ? ' active' : '') + '"' +
             ' data-theme="' + t.id + '">' +
@@ -1377,7 +1431,7 @@ function applyTheme(id) {
 }
 
 function getCurrentTheme() {
-    return localStorage.getItem('trpg-theme') || 'dark';
+    return localStorage.getItem('trpg-theme') || 'paper';
 }
 
 // refresh theme selector border on settings tab
@@ -1391,6 +1445,6 @@ loadSettings = function() {
 
 function shutdownServer() {
     if (!confirm('退出服务器？游戏状态会自动保存。')) return;
-    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#1a1a2e;color:#eee;font-size:20px;flex-direction:column;font-family:Segoe UI,Microsoft YaHei,sans-serif;"><div style="font-size:48px;">&#9632;</div><div style="margin-top:20px;font-weight:600;">TRPG-to-SKILL 已关闭</div><div style="font-size:13px;color:#aaa;margin-top:10px;">请关闭此窗口</div></div>';
-    fetch('/api/config/shutdown');
+    fetch('/api/config/shutdown', { method: 'POST' }).catch(function() {});
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#1a1a2e;color:#eee;font-size:20px;flex-direction:column;font-family:Segoe UI,Microsoft YaHei,sans-serif;"><div style="font-size:48px;">&#9632;</div><div style="margin-top:20px;font-weight:600;">TRPG-to-SKILL 已关闭</div><div style="font-size:13px;color:#aaa;margin-top:10px;">可关闭此窗口</div><div style="font-size:11px;color:#666;margin-top:16px;">下次启动：双击 启动.bat</div></div>';
 }

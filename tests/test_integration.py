@@ -158,6 +158,201 @@ def test_game_state_serialization():
     print(f"  ✓ GameState serialization: turn={restored.turn}, inv={restored.inventory}")
 
 
+def test_safe_path_allowlist():
+    """A3: safe_path 仅允许 skills_generated/ 与 skills/，并防前缀误判"""
+    from web.security import allowed_roots, safe_path
+
+    roots = allowed_roots()
+    names = sorted(r.name for r in roots)
+    assert names == ["skills", "skills_generated"], f"allowed_roots 异常: {names}"
+
+    # 允许：两个根目录内的路径
+    inside = roots[0] / "异界街角的店灵日志"
+    assert safe_path(str(inside)) == inside.resolve()
+    assert safe_path(str(roots[1] / "x")) == (roots[1] / "x").resolve()
+
+    # 拒绝：根目录外
+    outside = PROJECT_ROOT / "core"
+    try:
+        safe_path(str(outside))
+        assert False, "应拒绝 skills/ 之外的路径"
+    except ValueError:
+        pass
+
+    # 拒绝：前缀误判（skills_evil 不应被当作 skills 子目录）
+    evil = PROJECT_ROOT / "skills_evil"
+    try:
+        safe_path(str(evil))
+        assert False, "应拒绝 skills_evil 前缀误判"
+    except ValueError:
+        pass
+
+    print(f"  ✓ safe_path: roots={names}, 前缀误判已防护")
+
+
+def test_engine_tool_writeback():
+    """A1/E1: 工具输出的 state_patch 并入顶层 custom，flags_to_set 并入 flags"""
+    import tempfile
+    import json
+    from core.state import GameState
+    from runtime.engine import GameEngine
+
+    with tempfile.TemporaryDirectory() as td:
+        skill_dir = Path(td)
+        (skill_dir / "tools").mkdir(parents=True, exist_ok=True)
+        tool = skill_dir / "tools" / "echo.py"
+        tool.write_text(
+            "import json\n"
+            "print(json.dumps({"
+            "'state_patch': {'balance_copper': 347, 'prosperity': 27, 'day': 5},"
+            "'flags_to_set': ['act1_exit_ready'],"
+            "'narrative_hint': 'x'"
+            "}, ensure_ascii=False))\n",
+            encoding="utf-8",
+        )
+
+        eng = GameEngine.__new__(GameEngine)
+        eng.skill_dir = skill_dir
+        eng.state = GameState()
+        eng._handle_tool({"tool": "echo.py"})
+
+        # 普通字段 → 顶层 custom
+        assert eng.state.custom.get("balance_copper") == 347
+        assert eng.state.custom.get("prosperity") == 27
+        # 白名单字段 → GameState 顶层属性，且不落入 custom
+        assert eng.state.day == 5
+        assert "day" not in eng.state.custom
+        assert eng.state.has_flag("act1_exit_ready")
+        assert isinstance(eng.state.custom.get("last_tool_result"), dict)
+    print("  ✓ engine E1 writeback: custom patched + flag set")
+
+
+def test_game_dianling_tools():
+    """《异界街角的店灵日志》工具链契约（以子进程方式，模拟引擎调用）"""
+    import subprocess
+    import json
+    game_dir = PROJECT_ROOT / "skills" / "异界街角的店灵日志"
+    tools = game_dir / "tools"
+    if not (tools / "time_block.py").exists():
+        print("  - 跳过：游戏目录尚未生成")
+        return
+
+    def run(script, *args):
+        r = subprocess.run([sys.executable, str(tools / script), *args],
+                           cwd=str(game_dir), capture_output=True,
+                           text=True, encoding="utf-8")
+        assert r.returncode == 0, f"{script} 失败: {r.stderr}"
+        return r
+
+    # 1) 初始化（Prologue Part1: 现代世界）
+    run("session_starter.py")
+    save = json.loads((game_dir / "saves" / "autosave.json").read_text(encoding="utf-8"))
+    assert save["phase"].startswith("PROLOGUE_PART"), save["phase"]
+    sim = save["custom"]["last_tool_result"]["sim"]
+    assert sim["balance"] == 600
+    assert len(sim["menu"]) == 5
+    assert set(sim["npcs"]) == {"ada", "line", "bardo"}
+
+    # 1b) 验证 PROLOGUE_PART1 期间 time_block 不泄漏咖啡店数据
+    out_p1 = json.loads(run("time_block.py").stdout)
+    assert "state_patch" in out_p1
+    if save["phase"] == "PROLOGUE_PART1":
+        assert "余额" not in out_p1.get("state_patch", {})
+        assert "繁荣度" not in out_p1.get("state_patch", {})
+
+    # 手动将阶段推进到 PART3（咖啡店模拟完全上线后），测试后续工具链
+    save["phase"] = "PROLOGUE_PART3"
+    (game_dir / "saves" / "autosave.json").write_text(json.dumps(save, ensure_ascii=False),
+                                                      encoding="utf-8")
+
+    # 2) 调度器 — 推进进入营业并出餐
+    out = json.loads(run("time_block.py", "开店营业").stdout)
+    for k in ("sim", "state_patch", "flags_to_set"):
+        assert k in out, f"缺少 {k}"
+    assert "余额" in out["state_patch"] and "繁荣度" in out["state_patch"]
+    assert out["state_patch"]["时间块"] == "午前营业"
+    assert "block_result" in out
+
+    # 3) 店灵能力意图匹配
+    out = json.loads(run("time_block.py", "让艾达注意到窗台上的那封信").stdout)
+    assert out.get("spirit_result", {}).get("ability") == "轻推"
+
+    # 4) 快进多日 — 验证疲劳有界（跨夜恢复生效）
+    out = json.loads(run("time_block.py", "快进20天").stdout)
+    assert "fast_summary" in out
+    fats = [n["fatigue"] for n in out["sim"]["npcs"].values()]
+    assert max(fats) < 95, f"疲劳失控: {fats}"
+    assert out["flags_to_set"], "快进多日后应至少置 prologue_complete"
+
+    print(f"  ✓ 店灵日志工具链: 初始化/调度/能力/快进 OK, 疲劳上限={max(fats)}")
+
+
+def test_game_dianling_engine():
+    """端到端：用桩 LLM 启动 GameEngine 跑两回合，验证 引擎+调度器+E1+面板 串通。"""
+    import json
+    game_dir = PROJECT_ROOT / "skills" / "异界街角的店灵日志"
+    if not (game_dir / "loop_schema.json").exists():
+        print("  - 跳过：游戏目录尚未生成")
+        return
+
+    from runtime.engine import GameEngine
+
+    class _Resp:
+        content = "（测试叙事）"
+        tool_calls = []
+
+    class _StubLLM:
+        def chat_agent(self, **kwargs):
+            return _Resp()
+
+        def close(self):
+            pass
+
+    # 删除存档强制全新初始化
+    autosave = game_dir / "saves" / "autosave.json"
+    if autosave.exists():
+        autosave.unlink()
+
+    engine = GameEngine(str(game_dir), _StubLLM())
+    try:
+        assert engine.state.phase.startswith("PROLOGUE_PART"), engine.state.phase
+
+        gen = engine.run_loop()
+        e1 = next(gen)
+        assert e1["type"] == "narrative", e1
+        # PROLOGUE_PART1: state.custom 不包含咖啡店字段
+        assert "余额" not in engine.state.custom
+        assert "繁荣度" not in engine.state.custom
+        assert engine.state.day == 1
+
+        e2 = next(gen)
+        assert e2["type"] == "wait_input", e2
+
+        # 发送输入触发 LLM → 进入下一轮，推进到 PART2
+        e3 = gen.send("推进")
+        assert e3["type"] == "narrative", e3
+
+        # 消耗 PROLOGUE_PART2 的 pause（gen.send 仅消费一个 yield）
+        eb = next(gen)
+        assert eb["type"] == "wait_input"
+
+        # 手动将阶段跳到 PART3，模拟完整的咖啡店模拟上线
+        engine.phase_machine.set_phase("PROLOGUE_PART3")
+        engine.state.phase = "PROLOGUE_PART3"
+        engine.state.player_location = "咖啡店"
+
+        e4 = gen.send("开店营业")
+        assert e4["type"] == "narrative", e4
+        # 推进意图被调度器消费 → 进入午前营业（E1 回写）
+        assert engine.state.custom.get("时间块") == "午前营业", engine.state.custom.get("时间块")
+        assert "余额" in engine.state.custom
+        assert "繁荣度" in engine.state.custom
+    finally:
+        engine.shutdown()
+
+    print("  ✓ GameEngine 端到端: 启动→叙事→输入→推进 OK")
+
+
 if __name__ == "__main__":
     print("\n★ TRPG-to-SKILL — 集成测试\n")
     
@@ -168,6 +363,10 @@ if __name__ == "__main__":
         test_config_manager,
         test_compiler_dry_run,
         test_game_state_serialization,
+        test_safe_path_allowlist,
+        test_engine_tool_writeback,
+        test_game_dianling_tools,
+        test_game_dianling_engine,
     ]
     
     passed = 0

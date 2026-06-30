@@ -31,18 +31,17 @@ class RingBuffer:
 
     def write(self, line: str):
         _ensure_dir()
-        lines = []
-        if os.path.exists(self.path):
-            try:
-                with open(self.path, "r", encoding="utf-8") as f:
-                    lines = f.readlines()
-            except Exception:
-                lines = []
-        lines.append(line)
+        with open(self.path, "a", encoding="utf-8") as f:
+            f.write(line)
+        if os.path.getsize(self.path) > self.max_lines * 120:
+            self._truncate()
+
+    def _truncate(self):
+        with open(self.path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
         if len(lines) > self.max_lines:
-            lines = lines[-self.max_lines:]
-        with open(self.path, "w", encoding="utf-8") as f:
-            f.writelines(lines)
+            with open(self.path, "w", encoding="utf-8") as f:
+                f.writelines(lines[-self.max_lines:])
 
 
 class AgentLogger:

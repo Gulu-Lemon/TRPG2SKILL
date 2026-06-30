@@ -3,31 +3,41 @@ TRPG-to-SKILL Web GUI — Flask 入口
 """
 import atexit
 import os
-import signal
 import sys
+import signal
+import threading
 from pathlib import Path
 
 _BASE = Path(__file__).resolve().parent
 
 _running_app = None
+_shutdown_done = False
 
 
 def _cleanup():
-    """保存引擎状态，关闭 LLM 连接，清空日志缓存"""
-    print("\n  Shutting down...", flush=True)
-    try:
-        from web.blueprints.play import _engine, _engine_lock
-        with _engine_lock:
-            if _engine:
-                _engine.shutdown()
-                print("  Game state saved.", flush=True)
-    except Exception as e:
-        print(f"  Warning: {e}", flush=True)
+    global _shutdown_done
+    if _shutdown_done:
+        return
+    _shutdown_done = True
 
+    def _do_cleanup():
+        print("\n  Shutting down...", flush=True)
+        try:
+            from web.blueprints.play import _engine, _engine_lock
+            acquired = _engine_lock.acquire(timeout=2)
+            try:
+                if _engine:
+                    _engine.shutdown()
+                    print("  Game state saved.", flush=True)
+            finally:
+                if acquired:
+                    _engine_lock.release()
+        except Exception as e:
+            print(f"  Warning: {e}", flush=True)
 
-def _signal_handler(signum, frame):
-    print("\n  Received signal, shutting down...", flush=True)
-    _cleanup()
+    t = threading.Thread(target=_do_cleanup, daemon=True)
+    t.start()
+    t.join(timeout=5)
     os._exit(0)
 
 
@@ -72,24 +82,23 @@ def main():
         sys.stdout.reconfigure(encoding='utf-8')
 
     atexit.register(_cleanup)
-    signal.signal(signal.SIGINT, _signal_handler)
-    signal.signal(signal.SIGTERM, _signal_handler)
 
     _running_app = create_app()
 
-    # 确保 generated 目录始终存在
-    (_BASE.parent / "generated").mkdir(parents=True, exist_ok=True)
+    (_BASE.parent / "skills_generated").mkdir(parents=True, exist_ok=True)
+    (_BASE.parent / "skills").mkdir(parents=True, exist_ok=True)
 
     print("\n  == TRPG-to-SKILL Web GUI ==")
     print("  -> http://127.0.0.1:8641")
     print("  Press Ctrl+C to stop\n")
 
     try:
-        _running_app.run(host="0.0.0.0", port=8641, threaded=True, debug=False)
+        _running_app.run(host="127.0.0.1", port=8641, threaded=True, debug=False)
     except KeyboardInterrupt:
-        pass
+        print("", flush=True)
     finally:
         _cleanup()
+    sys.exit(0)
 
 
 if __name__ == "__main__":

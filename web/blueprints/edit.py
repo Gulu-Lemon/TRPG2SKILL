@@ -10,6 +10,8 @@ edit_bp = Blueprint("edit", __name__)
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 _edit_lock = threading.Lock()
 
+from web.security import safe_path
+
 
 def _read_json(path: Path) -> dict:
     if path.exists():
@@ -29,7 +31,10 @@ def get_bans():
     data = request.args.get("dir", "")
     if not data:
         return {"error": "缺少 dir 参数"}, 400
-    path = Path(data) / "AGENTS.md"
+    try:
+        path = safe_path(data) / "AGENTS.md"
+    except ValueError as e:
+        return {"error": str(e)}, 403
     if not path.exists():
         return {"bans": []}
     text = path.read_text(encoding="utf-8")
@@ -53,8 +58,10 @@ def update_bans():
     bans = data.get("bans", [])
     if not dir_path:
         return {"error": "缺少 dir"}, 400
-
-    path = Path(dir_path) / "AGENTS.md"
+    try:
+        path = safe_path(dir_path) / "AGENTS.md"
+    except ValueError as e:
+        return {"error": str(e)}, 403
     lines = [f"# AGENTS.md — 核心规则\n", "\n",
              "每次游戏启动时自动读取。仅包含强制执行规则。\n", "\n",
              "---\n", "\n", "## 绝对禁令\n", "\n"]
@@ -82,8 +89,10 @@ def smart_dedup():
     dir_path = data.get("dir", "")
     if not dir_path:
         return {"error": "缺少 dir"}, 400
-
-    path = Path(dir_path) / "AGENTS.md"
+    try:
+        path = safe_path(dir_path) / "AGENTS.md"
+    except ValueError as e:
+        return {"error": str(e)}, 403
     if not path.exists():
         return {"bans": []}
 
@@ -119,7 +128,10 @@ def get_lorebook():
     data = request.args.get("dir", "")
     if not data:
         return {"error": "缺少 dir"}, 400
-    path = Path(data) / "lorebook.json"
+    try:
+        path = safe_path(data) / "lorebook.json"
+    except ValueError as e:
+        return {"error": str(e)}, 403
     if not path.exists():
         return {"entries": []}
     d = _read_json(path)
@@ -134,8 +146,10 @@ def update_lorebook():
     entries = data.get("entries", [])
     if not dir_path:
         return {"error": "缺少 dir"}, 400
-
-    path = Path(dir_path) / "lorebook.json"
+    try:
+        path = safe_path(dir_path) / "lorebook.json"
+    except ValueError as e:
+        return {"error": str(e)}, 403
     d = _read_json(path)
     d["entries"] = entries
     with _edit_lock:
@@ -151,7 +165,10 @@ def get_tool_pool():
     tool_name = request.args.get("tool", "")
     if not dir_path or not tool_name:
         return {"error": "缺少参数"}, 400
-    path = Path(dir_path) / "tools" / tool_name
+    try:
+        path = safe_path(dir_path) / "tools" / tool_name
+    except ValueError as e:
+        return {"error": str(e)}, 403
     if not path.exists():
         return {"pool": []}
     text = path.read_text(encoding="utf-8")
@@ -176,8 +193,10 @@ def update_tool_pool():
     pool = data.get("pool", [])
     if not dir_path or not tool_name:
         return {"error": "缺少参数"}, 400
-
-    path = Path(dir_path) / "tools" / tool_name
+    try:
+        path = safe_path(dir_path) / "tools" / tool_name
+    except ValueError as e:
+        return {"error": str(e)}, 403
     if not path.exists():
         return {"error": "工具文件不存在"}, 404
 
@@ -202,7 +221,10 @@ def get_agents():
     data = request.args.get("dir", "")
     if not data:
         return {"error": "缺少 dir"}, 400
-    path = Path(data) / "AGENTS.md"
+    try:
+        path = safe_path(data) / "AGENTS.md"
+    except ValueError as e:
+        return {"error": str(e)}, 403
     if not path.exists():
         return {"text": ""}
     return {"text": path.read_text(encoding="utf-8")}
@@ -215,7 +237,10 @@ def update_agents():
     text = data.get("text", "")
     if not dir_path:
         return {"error": "缺少 dir"}, 400
-    path = Path(dir_path) / "AGENTS.md"
+    try:
+        path = safe_path(dir_path) / "AGENTS.md"
+    except ValueError as e:
+        return {"error": str(e)}, 403
     with _edit_lock:
         path.write_text(text, encoding="utf-8")
     return {"ok": True}

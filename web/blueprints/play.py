@@ -11,6 +11,8 @@ play_bp = Blueprint("play", __name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
+from web.security import safe_path, allowed_roots
+
 _engine = None
 _engine_lock = threading.Lock()
 _engine_gen = None      # 持久生成器引用
@@ -46,12 +48,11 @@ def load_game():
 
     from core.config_profiles import create_llm_from_profile
     from runtime.engine import GameEngine
-    from pathlib import Path as P
 
-    gd = P(game_dir)
-    if not gd.is_absolute():
-        gd = PROJECT_ROOT / gd
-    gd = gd.resolve()
+    try:
+        gd = safe_path(game_dir)
+    except ValueError as e:
+        return {"error": str(e)}, 403
 
     # 验证 SKILL 目录有效性
     if not gd.is_dir():
@@ -94,23 +95,25 @@ def narrate():
     if not _engine:
         return {"error": "无活动游戏"}, 400
 
-    if _engine_gen is None:
-        _engine_gen = _engine.run_loop()
+    with _engine_lock:
+        if _engine_gen is None:
+            _engine_gen = _engine.run_loop()
 
-    # 推进到叙事 (经过 read_state, route, tool, 到达 llm_narrative)
-    evt = _advance_once(_engine_gen)
-    if evt['type'] == 'error':
-        return {"error": evt.get('content', '叙事生成失败')}, 500
-    if evt['type'] == '_done_':
-        return {"error": "游戏已结束"}, 400
+        # 推进到叙事 (经过 read_state, route, tool, 到达 llm_narrative)
+        evt = _advance_once(_engine_gen)
+        if evt['type'] == 'error':
+            return {"error": evt.get('content', '叙事生成失败')}, 500
+        if evt['type'] == '_done_':
+            return {"error": "游戏已结束"}, 400
 
-    narrative = evt.get('content', '')
+        narrative = evt.get('content', '')
 
-    # 推进到 wait_input (经过 pause 步骤)
-    evt = _advance_once(_engine_gen)
-    waiting = evt['type'] == 'wait_input'
+        # 推进到 wait_input (经过 pause 步骤)
+        evt = _advance_once(_engine_gen)
+        waiting = evt['type'] == 'wait_input'
 
-    s = _engine.state
+        s = _engine.state
+
     return {"narrative": narrative,
             "turn": s.turn, "day": s.day,
             "phase": s.phase, "location": s.player_location,
@@ -118,6 +121,8 @@ def narrate():
             "flags": s.flags[-10:],
             "custom": {k: v for k, v in s.custom.items()
                        if k not in ("routed_tool", "last_tool_result")},
+            "npcs": list(s.npcs.keys())[:10],
+            "state_fields": _engine.loop_schema.get("state_fields", []),
             "waiting": waiting}
 
 
@@ -128,35 +133,37 @@ def player_input():
     if not _engine:
         return {"error": "无活动游戏"}, 400
 
-    if _engine_gen is None:
-        return {"error": "请先调用 /api/play/narrate 开始游戏"}, 400
-
     data = request.get_json()
     text = (data or {}).get("text", "").strip()
     if not text:
         return {"error": "输入为空"}, 400
 
-    # 发送到生成器 → 推进到下一轮叙事
-    try:
-        result = _engine_gen.send(text)
-    except StopIteration:
-        _engine_gen = None
-        return {"error": "游戏已结束"}, 400
-    except Exception as e:
-        return {"error": str(e)}, 500
+    with _engine_lock:
+        if _engine_gen is None:
+            return {"error": "请先调用 /api/play/narrate 开始游戏"}, 400
 
-    if isinstance(result, dict) and result['type'] == 'narrative':
-        narrative = result.get('content', '')
-    elif isinstance(result, dict) and result['type'] == 'error':
-        return {"error": result.get('content', str(result))}, 500
-    else:
-        narrative = str(result)
+        # 发送到生成器 → 推进到下一轮叙事
+        try:
+            result = _engine_gen.send(text)
+        except StopIteration:
+            _engine_gen = None
+            return {"error": "游戏已结束"}, 400
+        except Exception as e:
+            return {"error": str(e)}, 500
 
-    # 推进到 wait_input
-    evt = _advance_once(_engine_gen)
-    waiting = evt['type'] == 'wait_input'
+        if isinstance(result, dict) and result['type'] == 'narrative':
+            narrative = result.get('content', '')
+        elif isinstance(result, dict) and result['type'] == 'error':
+            return {"error": result.get('content', str(result))}, 500
+        else:
+            narrative = str(result)
 
-    s = _engine.state
+        # 推进到 wait_input
+        evt = _advance_once(_engine_gen)
+        waiting = evt['type'] == 'wait_input'
+
+        s = _engine.state
+
     return {"narrative": narrative,
             "turn": s.turn, "day": s.day,
             "phase": s.phase, "location": s.player_location,
@@ -164,6 +171,8 @@ def player_input():
             "flags": s.flags[-10:],
             "custom": {k: v for k, v in s.custom.items()
                        if k not in ("routed_tool", "last_tool_result")},
+            "npcs": list(s.npcs.keys())[:10],
+            "state_fields": _engine.loop_schema.get("state_fields", []),
             "waiting": waiting}
 
 
@@ -172,14 +181,52 @@ def get_state():
     global _engine
     if not _engine:
         return {"error": "无活动游戏"}, 400
-    s = _engine.state
-    state_fields = _engine.loop_schema.get("state_fields", [])
-    return {"turn": s.turn, "day": s.day, "phase": s.phase,
-            "location": s.player_location, "inventory": s.inventory[:20],
-            "flags": s.flags[-20:], "npcs": list(s.npcs.keys())[:10],
+    with _engine_lock:
+        s = _engine.state
+        state_fields = _engine.loop_schema.get("state_fields", [])
+        result = {"turn": s.turn, "day": s.day, "phase": s.phase,
+                  "location": s.player_location, "inventory": s.inventory[:20],
+                  "flags": s.flags[-20:], "npcs": list(s.npcs.keys())[:10],
+                  "custom": {k: v for k, v in s.custom.items()
+                             if k not in ("routed_tool", "last_tool_result")},
+                  "state_fields": state_fields}
+    return result
+
+
+@play_bp.route("/resume", methods=["POST"])
+def resume_game():
+    """加载存档后接管：跑一次调度器刷新面板，跳过 LLM，停在等待输入。
+
+    与 /narrate 的区别：不调用 LLM 生成新叙事，不改变游戏进程。
+    玩家看到上次停下的完整历史，输入框可用，输入后正常触发 LLM。
+    """
+    global _engine, _engine_gen
+    if not _engine:
+        return {"error": "无活动游戏"}, 400
+    with _engine_lock:
+        if _engine_gen is None:
+            _engine_gen = _engine.run_loop()
+        _engine._skip_narrative = True
+        # 推进经过 read_state → route → tool（调度器刷新面板）→ llm_narrative（跳过）
+        evt = _advance_once(_engine_gen)
+        if evt['type'] == 'error':
+            return {"error": evt.get('content', '恢复失败')}, 500
+        if evt['type'] == '_done_':
+            return {"error": "游戏已结束"}, 400
+        # 然后推进到 wait_input
+        evt = _advance_once(_engine_gen)
+        waiting = evt['type'] == 'wait_input'
+        s = _engine.state
+    return {"narrative": "",
+            "turn": s.turn, "day": s.day,
+            "phase": s.phase, "location": s.player_location,
+            "inventory": s.inventory[:10],
+            "flags": s.flags[-10:],
             "custom": {k: v for k, v in s.custom.items()
                        if k not in ("routed_tool", "last_tool_result")},
-            "state_fields": state_fields}
+            "npcs": list(s.npcs.keys())[:10],
+            "state_fields": _engine.loop_schema.get("state_fields", []),
+            "waiting": waiting}
 
 
 @play_bp.route("/reset", methods=["POST"])
@@ -187,19 +234,21 @@ def reset_game():
     global _engine, _engine_gen
     if not _engine:
         return {"error": "无活动游戏"}, 400
-    saves_dir = _engine.skill_dir / "saves"
-    if saves_dir.exists():
-        for f in saves_dir.glob("*.json"):
-            f.unlink()
-    from runtime.tool_runner import init_session
-    try:
-        init_session(_engine.skill_dir)
-    except Exception:
-        pass
-    _engine._state_loaded = False
-    _engine._load_or_init_state()
-    _engine_gen = None
-    return {"ok": True, "game_name": _engine.loop_schema.get("game_name", "")}
+    with _engine_lock:
+        saves_dir = _engine.skill_dir / "saves"
+        if saves_dir.exists():
+            for f in saves_dir.glob("*.json"):
+                f.unlink()
+        from runtime.tool_runner import init_session
+        try:
+            init_session(_engine.skill_dir)
+        except Exception:
+            pass
+        _engine._state_loaded = False
+        _engine._load_or_init_state()
+        _engine_gen = None
+        name = _engine.loop_schema.get("game_name", "")
+    return {"ok": True, "game_name": name}
 
 
 @play_bp.route("/command", methods=["POST"])
@@ -211,11 +260,12 @@ def send_command():
     cmd = data.get("cmd", "")
 
     if cmd == "/hotreload":
-        changed = _engine.hot_reload.poll(_engine.lorebook, _engine.config_mgr)
-        if changed:
-            _engine.config = _engine.config_mgr.data
-            return {"ok": True, "changed": len(changed)}
-        return {"ok": True, "changed": 0}
+        with _engine_lock:
+            changed = _engine.hot_reload.poll(_engine.lorebook, _engine.config_mgr)
+            if changed:
+                _engine.config = _engine.config_mgr.data
+                return {"ok": True, "changed": len(changed)}
+            return {"ok": True, "changed": 0}
 
     return {"error": f"未知命令: {cmd}"}, 400
 
@@ -226,7 +276,7 @@ def list_skills():
     skills = []
     seen = set()
 
-    for base_dir in [PROJECT_ROOT / "generated", PROJECT_ROOT.parent / "SKILL打包区"]:
+    for base_dir in allowed_roots():
         if not base_dir.exists():
             continue
         for d in sorted(base_dir.iterdir()):
@@ -304,12 +354,11 @@ def scan_dir():
     if not path_str:
         return {"error": "路径为空"}, 400
 
-    from pathlib import Path as P
     import json as _json
-    p = P(path_str)
-    if not p.is_absolute():
-        p = PROJECT_ROOT / p
-    p = p.resolve()
+    try:
+        p = safe_path(path_str)
+    except ValueError as e:
+        return {"error": str(e)}, 403
     if not p.is_dir():
         return {"error": "目录不存在"}, 400
 

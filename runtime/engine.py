@@ -31,6 +31,7 @@ from runtime.phase_machine import PhaseMachine
 from runtime.protocol_guard import ProtocolGuard
 from runtime.memory_manager import MemoryManager
 from runtime.tool_runner import run_tool, init_session
+from runtime.hot_reload import HotReloadWatcher
 
 
 class GameEngine:
@@ -42,7 +43,7 @@ class GameEngine:
 
         self.loop_schema = self._load_json("loop_schema.json")
         self.phase_scripts = self.loop_schema.get("phase_scripts", {})
-        self.narrative_prompt_template = self.loop_schema.get("prompts", {}).get("narrative_prompt", "")
+        self.prompts = self.loop_schema.get("prompts", {})
         self.agent_tools = self.loop_schema.get("agent_tools") or []
         # 内置工具
         self.agent_tools.append({
@@ -100,7 +101,9 @@ class GameEngine:
         self._load_or_init_state()
         self._last_narrative = ""
         self._turns_in_phase = 0
+        self._skip_narrative = False
 
+        self.hot_reload = HotReloadWatcher(self.skill_dir)
         self.static_system = self.prompt_assembler.system_prompt
 
     def _load_json(self, filename: str) -> dict:
@@ -126,26 +129,47 @@ class GameEngine:
                 self.state = GameState.from_dict(data)
                 if self.state.lorebook_state:
                     self.lorebook.restore_state(self.state.lorebook_state)
+                self._sync_phase_machine()
                 return
             except Exception:
                 pass
+        # 无存档 → 用 session_starter 初始化，并回读其写出的完整初始状态。
+        # （否则 session_starter 的富初始化会被随后写出的空 GameState 覆盖。）
+        initialized = False
         try:
             init_session(self.skill_dir)
+            if autosave.exists():
+                data = json.loads(autosave.read_text(encoding="utf-8"))
+                self.state = GameState.from_dict(data)
+                if self.state.lorebook_state:
+                    self.lorebook.restore_state(self.state.lorebook_state)
+                initialized = True
         except Exception:
+            pass
+        if not initialized:
             saves_dir = self.skill_dir / "saves"
             saves_dir.mkdir(parents=True, exist_ok=True)
+            self.state = GameState()
             (saves_dir / "autosave.json").write_text(
-                json.dumps(GameState().to_dict(), ensure_ascii=False, indent=2),
+                json.dumps(self.state.to_dict(), ensure_ascii=False, indent=2),
                 encoding="utf-8"
             )
         try:
-            self.state.turn = 1
-            self.state.day = 1
-            self.state.phase = self.phase_machine.current
+            self._sync_phase_machine()
             self._write_state()
         except Exception:
             import traceback
             traceback.print_exc()
+
+    def _sync_phase_machine(self):
+        """让阶段机与已加载/初始化的 state.phase 对齐（修复加载存档后阶段错位）。"""
+        if self.state.phase and self.state.phase in self.phase_machine.phases:
+            self.phase_machine.set_phase(self.state.phase)
+        else:
+            self.state.phase = self.phase_machine.current
+        # 修复旧存档中硬编码的店名占位符
+        if self.state.player_location in ("灰鸽亭",) and self.state.phase not in ("PROLOGUE_PART1",):
+            self.state.player_location = "咖啡店"
 
     # ═══════════════════ 主循环 ═══════════════════
 
@@ -165,6 +189,9 @@ class GameEngine:
                 self.state.phase = self.phase_machine.current
             if self.state.phase != old_phase:
                 self._turns_in_phase = 0
+                # 阶段转换时更新玩家位置
+                if self.state.phase == "PROLOGUE_PART2" and self.state.player_location == "现代世界":
+                    self.state.player_location = "咖啡店"
 
             for step in steps:
                 step_type = step.get("type", "")
@@ -181,9 +208,20 @@ class GameEngine:
                         yield result
 
                 elif step_type == "llm_narrative":
-                    narrative = self._generate_narrative()
-                    self._last_narrative = narrative
-                    yield {"type": "narrative", "content": narrative}
+                    # 固定开场：PROLOGUE_PART1 首回合直接输出预写文本，不调 LLM
+                    fixed = self.loop_schema.get("fixed_opening", "")
+                    if fixed and self.state.phase == "PROLOGUE_PART1" \
+                       and self.state.turn == 1 and not self.state.history:
+                        self._last_narrative = fixed
+                        yield {"type": "narrative", "content": fixed}
+                    elif self._skip_narrative:
+                        self._skip_narrative = False
+                        self._last_narrative = ""
+                        yield {"type": "narrative", "content": ""}
+                    else:
+                        narrative = self._generate_narrative()
+                        self._last_narrative = narrative
+                        yield {"type": "narrative", "content": narrative}
 
                 elif step_type == "pause":
                     player_input = yield {"type": "wait_input"}
@@ -236,8 +274,25 @@ class GameEngine:
             result = run_tool(self.skill_dir, tool_file,
                               args=tool_name.split()[1:])
             self.state.custom["last_tool_result"] = result
+            # E1: 确定性工具回写 — state_patch 并入顶层 custom（供 HUD/state_fields），
+            # 其中白名单字段(day/player_location)写入 GameState 顶层属性；
+            # flags_to_set 并入 state.flags（供 PhaseMachine 的 has_flag 条件驱动幕间转换）。
+            # 注意: turn/phase 由引擎与阶段机管理，不接受工具覆盖。
+            if isinstance(result, dict):
+                patch = result.get("state_patch")
+                if isinstance(patch, dict):
+                    for key, val in patch.items():
+                        if key in ("day", "player_location"):
+                            setattr(self.state, key, val)
+                        else:
+                            self.state.custom[key] = val
+                for flag in (result.get("flags_to_set") or []):
+                    if isinstance(flag, str) and flag:
+                        self.state.add_flag(flag)
         except Exception:
-            pass
+            import traceback
+            print("\n  [工具错误] time_block.py 执行异常：", flush=True)
+            traceback.print_exc()
         return None
 
     def _generate_narrative(self) -> str:
@@ -251,10 +306,13 @@ class GameEngine:
         context = pack_context(self.state, active_entries,
                                phase_scripts=self.phase_scripts)
 
-        if self.narrative_prompt_template:
+        # 按阶段选取叙事提示模板：优先 narrative_prompt_{phase}，回退到 narrative_prompt
+        template = self.prompts.get(f"narrative_prompt_{self.state.phase}") or \
+                   self.prompts.get("narrative_prompt", "")
+        if template:
             try:
                 extra_rules = self.phase_scripts.get(self.state.phase, [])
-                rendered = self.narrative_prompt_template.format(
+                rendered = template.format(
                     phase=self.state.phase,
                     location=self.state.player_location or "未知",
                     extra_rules="\n".join(f"- {s}" for s in extra_rules),
@@ -359,6 +417,9 @@ class GameEngine:
             else:
                 self.phase_machine.tick(self.state)
             self.state.phase = self.phase_machine.current
+            # 阶段转换时更新玩家位置
+            if self.state.phase == "PROLOGUE_PART2" and self.state.player_location == "现代世界":
+                self.state.player_location = "咖啡店"
             # 返回当前阶段和可用脚本预览
             scripts = self.phase_scripts.get(self.state.phase, [])
             preview = scripts[:3] if scripts else []
@@ -367,12 +428,12 @@ class GameEngine:
 
         return {"error": f"未知工具: {name}"}
 
-    def _process_input(self):
+    def _process_input(self, player_input: str = ""):
         """记录本轮到历史（不单独调 LLM，纯代码操作）"""
         self.state.history.append(TurnRecord(
             turn=self.state.turn,
             narrative=self._last_narrative,
-            player_input=getattr(self.state, 'last_input', ''),
+            player_input=player_input or self.state.last_input,
             phase=self.state.phase,
         ))
 

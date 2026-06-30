@@ -211,3 +211,126 @@ body {
     border-left: 1px solid rgba(255, 255, 255, 0.06);
 }
 #lorebook-panel.show { display: block; }
+
+.player-msg {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 14px 14px 4px 14px;
+    box-shadow: 0 2px 12px rgba(88, 166, 255, 0.2);
+}
+
+.gm-msg {
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    background: rgba(22, 27, 34, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px 14px 14px 4px;
+}
+.gm-msg .gm-actions {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background: rgba(13, 17, 23, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+}
+.gm-msg .gm-actions button {
+    background: rgba(56, 139, 253, 0.12);
+    color: var(--text2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+}
+.gm-msg .gm-actions button:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.loading-msg {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(22, 27, 34, 0.3);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    color: var(--text2);
+}
+
+.system-msg {
+    background: rgba(56, 139, 253, 0.06);
+    border-left: 2px solid rgba(88, 166, 255, 0.25);
+    border-radius: 0 6px 6px 0;
+}
+
+.edit-tab {
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+}
+.edit-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.edit-item {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background: rgba(22, 27, 34, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+select.edit-input {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(22, 27, 34, 0.3);
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+}
+
+.game-card {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background: rgba(22, 27, 34, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.game-card:hover {
+    background: rgba(56, 139, 253, 0.1);
+    border-color: var(--accent);
+}
+
+.config-row {
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.config-row label {
+    color: var(--text2);
+}
+
+#loading-overlay .spinner {
+    border-color: rgba(255,255,255,0.06);
+    border-top-color: var(--accent);
+    box-shadow: 0 0 16px rgba(88, 166, 255, 0.2);
+}
+
+#compile-submit::after, #send-btn::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 45%;
+    border-radius: 14px 14px 0 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%);
+    pointer-events: none;
+}
+#compile-submit, #send-btn { position: relative; overflow: hidden; }
+
+.btn-icon:active, #compile-submit:active, #send-btn:active {
+    transform: scale(0.96);
+}
+.game-card:active { transform: scale(0.98); }
+.lorebook-entry:active { transform: scale(0.98); }
+
+:root {
+    --elevation-sm: 0 1px 4px rgba(0,0,0,0.12);
+    --elevation-md: 0 4px 12px rgba(0,0,0,0.15);
+    --elevation-lg: 0 8px 24px rgba(0,0,0,0.2);
+    --elevation-xl: 0 16px 40px rgba(0,0,0,0.3);
+}
+
+body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(500px circle at var(--mx, 50%) var(--my, 50%), rgba(88,166,255,0.05), transparent 70%);
+}

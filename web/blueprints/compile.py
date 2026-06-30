@@ -48,7 +48,7 @@ def compile_start():
                 import sys
                 sys.path.insert(0, str(PROJECT_ROOT))
 
-                output_dir = PROJECT_ROOT / "generated" / output_name
+                output_dir = PROJECT_ROOT / "skills_generated" / output_name
                 output_dir.mkdir(parents=True, exist_ok=True)
 
                 tmp_file = output_dir / "_input.txt"
@@ -87,71 +87,3 @@ def compile_start():
     )
 
 
-@compile_bp.route("/phase", methods=["POST"])
-def compile_phase():
-    """选择性重编译单个 Phase"""
-    import sys
-    sys.path.insert(0, str(PROJECT_ROOT))
-
-    data = request.get_json()
-    text = data.get("world_book_text", "")
-    output_name = _clean_name(data.get("output_name", "my_game"))
-    phase_id = data.get("phase_id", 0)
-
-    if not text.strip():
-        return {"error": "世界书内容为空"}, 400
-
-    from core.config_profiles import create_llm_from_profile
-    from compiler.multi_analyzer import (
-        ENTITY_PROMPT, RULES_PROMPT, STRUCTURE_PROMPT, TOOLS_PROMPT, merge_results
-    )
-
-    llm = create_llm_from_profile(use_analyzer=True)
-    output_dir = PROJECT_ROOT / "generated" / output_name
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    def call_llm(system_prompt, max_tokens=2000):
-        try:
-            return llm.chat_json(
-                messages=[{"role": "user", "content": text}],
-                system=system_prompt, temperature=0.3, max_tokens=max_tokens,
-            )
-        except Exception as e:
-            return {}
-
-    # 读取已有结果
-    entity, rules, structure, tools = {}, {}, {}, {}
-    for fn, var in [("loop_schema.json", None)]:
-        pass
-
-    try:
-        import json as _json
-        ls = _json.loads((output_dir / "loop_schema.json").read_text(encoding="utf-8"))
-    except Exception:
-        ls = {}
-
-    # 只重跑指定 Phase
-    if phase_id == 1:
-        entity = call_llm(ENTITY_PROMPT, max_tokens=3000)
-    elif phase_id == 2:
-        rules = call_llm(RULES_PROMPT, max_tokens=1500)
-    elif phase_id == 3:
-        structure = call_llm(STRUCTURE_PROMPT, max_tokens=1000)
-    elif phase_id == 4:
-        tools = call_llm(TOOLS_PROMPT, max_tokens=2000)
-    else:
-        return {"error": "无效的 phase_id"}, 400
-
-    # 合并（用已有数据填充缺失 Phase）
-    if phase_id != 1:
-        for fn in (output_dir / "skill").glob("*.md"):
-            entity.setdefault("section_texts", []).append({"title": fn.stem, "text": fn.read_text(encoding="utf-8")[:500]})
-
-    analysis = merge_results(entity, rules, structure, tools)
-    from compiler.mapper import map_to_spec
-    from compiler.generator import generate
-    spec = map_to_spec(analysis)
-    generate(spec, output_dir)
-
-    llm.close()
-    return {"ok": True, "output_dir": str(output_dir), "phase_id": phase_id}

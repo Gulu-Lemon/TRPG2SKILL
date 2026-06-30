@@ -12,12 +12,20 @@ from pathlib import Path
 import json
 from typing import Optional, TYPE_CHECKING
 
+import re
+
 from core.state import LorebookEntry, LorebookStrategy, InsertPosition
 from runtime.lorebook_index import LorebookIndex
 
 if TYPE_CHECKING:
     from core.state import GameState
     from core.llm import LLMClient
+
+
+def _estimate_tokens(text: str) -> int:
+    cn = sum(1 for c in text if '\u4e00' <= c <= '\u9fff')
+    en_words = len(re.findall(r'[a-zA-Z]+', text))
+    return cn + en_words + len(text) // 10
 
 
 class LorebookManager:
@@ -164,7 +172,7 @@ class LorebookManager:
         result = []
         used = 0
         for entry in unique:
-            tokens = len(entry.content) // 2
+            tokens = _estimate_tokens(entry.content)
             if used + tokens > max_tokens and entry.strategy != LorebookStrategy.CONSTANT:
                 continue
             result.append(entry)

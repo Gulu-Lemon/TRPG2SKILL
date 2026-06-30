@@ -1,0 +1,322 @@
+{
+  "entries": [
+    {
+      "id": "world",
+      "title": "世界观总览",
+      "content": "非典型中世纪幻想，乱世边缘一处被遗忘的安宁角落。灰鸟镇坐落邦奇王国西南山窝，三面环山，约三百户，自给自足。游戏开始前邦奇已被强邻布里亚吞并，但消息传到此地极慢。魔法已是日常便利（加热咒、保鲜符文），高阶魔法失传。『店灵』是民间传说所知的概念——住在老物件或老房子里的、有温度的灵魂。咖啡店坐落主街 L 型拐角凹处，背靠小河，曾是凶宅，前任店主图便宜盘下。",
+      "type": "setting",
+      "keys": [
+        "世界",
+        "灰鸟镇",
+        "邦奇",
+        "布里亚",
+        "魔法",
+        "小镇"
+      ],
+      "strategy": "normal",
+      "position": "after_agents",
+      "scan_depth": 6,
+      "priority": 9999,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "spirit_concept",
+      "title": "店灵能力概念",
+      "content": "店灵没有身体、不能说话、不能行动，只能间接影响。能力分四阶，随繁荣度与羁绊成长：一阶物理微调（微光/轻推/温变/穿隙风），二阶氛围与直觉，三阶梦境/感知/庇护/印记，四阶虚像/梦境对话/店之加护/告别祝福。使用消耗灵力(SP)，低阶有失败率，部分高阶后会进入『沉睡』。",
+      "type": "rule",
+      "keys": [
+        "店灵",
+        "能力",
+        "灵力",
+        "沉睡",
+        "羁绊",
+        "SP"
+      ],
+      "strategy": "normal",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 50,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "biz_loop",
+      "title": "经营循环",
+      "content": "一日四个时间块：晨备→午前营业→午后营业→打烊后。繁荣度(0-100)量化口碑，驱动客群阶层、店灵升级与主线。经济以银/铜计（1银=100铜），薪资按『莉涅→巴尔德→艾达』顺序发放，每7日一次不定额周税。",
+      "type": "rule",
+      "keys": [
+        "营业",
+        "时间块",
+        "繁荣",
+        "薪资",
+        "税",
+        "打烊"
+      ],
+      "strategy": "normal",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 50,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "ada",
+      "title": "艾达 Ada（店长代理）",
+      "content": "20出头，栗色短发用墨水笔别在耳后，围裙常有新污渍。前任店主失踪后被指定为代理店长，表面干练、独自硬撑随时可能关门的危机。口癖『行，下一件』『又到月底了……』。软肋：怕失去这家店（她唯一的家）。是最先隐约察觉店里有『什么存在』的人，但起初不愿承认。",
+      "type": "npc",
+      "keys": [
+        "艾达",
+        "店长",
+        "代理店长"
+      ],
+      "strategy": "normal",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 20,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "line",
+      "title": "莉涅 Line（新手）",
+      "content": "16-17岁，亚麻色长发松辫，旧但干净的裙子，手脚笨拙却格外认真。镇郊农家出身，来城里打工补贴家用。口癖『对不起！』『我、我再试一次！』。感性直觉极强，是最早能真正『感应到』店灵情绪的人，却以为是自己胡思乱想。",
+      "type": "npc",
+      "keys": [
+        "莉涅",
+        "新手"
+      ],
+      "strategy": "normal",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 20,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "bardo",
+      "title": "巴尔德 Bardo（老手）",
+      "content": "40多岁，修剪整齐的短胡须，高大却动作轻柔，左手无名指有旧疤。前雇佣兵（22年），小队覆灭后遭追杀，被前任店主搭救。话极少，对咖啡有超出职业的执着。第1日午后无声回归（手压铜铃）。害怕再次拥有。是唯一可能对『店灵』概念有认知的人，后期主线关键。",
+      "type": "npc",
+      "keys": [
+        "巴尔德",
+        "老手",
+        "佣兵",
+        "雇佣兵"
+      ],
+      "strategy": "normal",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 20,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "martha",
+      "title": "玛莎 Martha（花店店主）",
+      "content": "人类女性50+，灰白头发裹旧头巾，寡言温和、观察力极强。卖时令鲜花、干花瓣、蜂蜜。隐约觉得那家店『有什么不一样』，但从不打听。可作情报源。",
+      "type": "npc",
+      "keys": [
+        "玛莎",
+        "花店"
+      ],
+      "strategy": "normal",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 20,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "durn",
+      "title": "杜恩 Durn（铁匠铺店主）",
+      "content": "狼耳亚人男性40+，灰黑短发立耳有旧裂口，尾巴断了一截，粗暴热心、嘴硬心细。与巴尔德有前佣兵的默契，来店只点黑咖啡站着一口喝完就走。提供设备维修/定制工具/设备升级。",
+      "type": "npc",
+      "keys": [
+        "杜恩",
+        "铁匠",
+        "铁匠铺"
+      ],
+      "strategy": "normal",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 20,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "silas",
+      "title": "赛拉斯 Silas（香料商）",
+      "content": "人类男性30+，瘦高、衣上洗不掉香料渍，精明话多有点神经质。卖基础与进阶香料、异国食材线索。繁荣度不够时懒得拿出好货。可解锁进阶供应商。",
+      "type": "npc",
+      "keys": [
+        "赛拉斯",
+        "香料",
+        "香料商"
+      ],
+      "strategy": "normal",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 20,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "helga",
+      "title": "海尔加 Helga（肉铺店主）",
+      "content": "人类女性40+，前佣兵，壮实、左眉竖疤，爽快直接。卖肉类/油脂/骨头。对巴尔德刻意地冷——两人间有一段不言明的旧history。可解锁轻食品类。",
+      "type": "npc",
+      "keys": [
+        "海尔加",
+        "肉铺"
+      ],
+      "strategy": "normal",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 20,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "korn",
+      "title": "科恩 Korn（小酒馆店主）",
+      "content": "人类男性50+，大腹便便红鼻头，圆滑健谈、信息灵通，是镇上情报集散地。与咖啡店微妙竞争。可作情报源与兼职推荐。",
+      "type": "npc",
+      "keys": [
+        "科恩",
+        "酒馆",
+        "小酒馆"
+      ],
+      "strategy": "normal",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 20,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "luowei",
+      "title": "洛维 Luowei（勇者）",
+      "content": "邦奇沦陷后被召唤的勇者，腰间佩剑、目光锐利。能近距离感知到灵体的注视——能感觉到店灵的存在。第三幕与魔法师安妮塔一同到来。",
+      "type": "npc",
+      "keys": [
+        "洛维",
+        "勇者"
+      ],
+      "strategy": "selective",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 20,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "annetta",
+      "title": "安妮塔 Annetta（魔法师）",
+      "content": "与洛维同行的年轻魔法师，背着法杖。若玩家持有阁楼纸条信息，可向她追问『逆向传送术』，她会道出店灵起源的往事碎片。",
+      "type": "npc",
+      "keys": [
+        "安妮塔",
+        "魔法师",
+        "逆向传送术"
+      ],
+      "strategy": "selective",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 20,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "old_owner",
+      "title": "前任店主（店长先生）",
+      "content": "走南闯北的精明商人，慧眼识人，救下巴尔德后隐居灰鸟镇。三个月前尝试『逆向传送术』失踪——实为与勇者召唤干扰、与异世界玩家互换位置而死。无人知其真名，艾达只唤他『店长先生』。",
+      "type": "npc",
+      "keys": [
+        "前任店主",
+        "老店主",
+        "店长先生",
+        "老头"
+      ],
+      "strategy": "selective",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 20,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "loc_cafe",
+      "title": "咖啡店（{店名}）",
+      "content": "主街转角凹处，一楼店面+二楼阁楼。木质吧台磨得发亮、铜铃门帘、烟囱冒暖烟、窗台一盆叫不出名字的蓝色植物（与店灵力量挂钩的视觉锚点）。气味：焙豆焦香、松脂、铜壶蒸汽、街上飘来的泥土味。",
+      "type": "location",
+      "keys": [
+        "咖啡店",
+        "店里",
+        "吧台",
+        "阁楼",
+        "蓝色植物"
+      ],
+      "strategy": "normal",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 15,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "loc_town",
+      "title": "灰鸟镇商业街",
+      "content": "咖啡店所在主街 L 型拐角。由左至右：花店—铁匠铺—[咖啡店]—香料商—肉铺；路对角是小酒馆；店后小河是商业区与平民区的分界，取水洗衣的人须从门前经过。近邻可顺路采购，集市在河对面需2人同行耗1时间块。",
+      "type": "location",
+      "keys": [
+        "商业街",
+        "主街",
+        "集市",
+        "小河",
+        "平民区"
+      ],
+      "strategy": "normal",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 15,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "note",
+      "title": "阁楼纸条残片",
+      "content": "第二幕在阁楼角落发现的撕破纸条，老店主日记一角，字迹歪斜：『要去找魔法师……逆向传送术』。另有一封未寄出的信提及『近来总觉得有什么要来了。如果我不在了，那姑娘应该能撑住。』",
+      "type": "item",
+      "keys": [
+        "纸条",
+        "遗物",
+        "日记",
+        "逆向传送术"
+      ],
+      "strategy": "selective",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 10,
+      "recursive": false,
+      "is_dynamic": false
+    },
+    {
+      "id": "ev_first_sense",
+      "title": "初次感应（第一幕高潮）",
+      "content": "某店员第一次隐约意识到『这家店里好像有什么』，触发取决于玩家此前与谁互动最多。玩家可选择回应或沉默，影响该 NPC 线走向与信任建立速度。",
+      "type": "event",
+      "keys": [
+        "初次感应",
+        "感应"
+      ],
+      "strategy": "selective",
+      "position": "after_instr",
+      "scan_depth": 6,
+      "priority": 6,
+      "recursive": false,
+      "is_dynamic": false
+    }
+  ],
+  "generated_at": "2026-06-29"
+}

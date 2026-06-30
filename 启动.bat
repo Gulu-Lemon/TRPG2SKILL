@@ -8,21 +8,18 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Check / install dependencies
 python -c "import flask" >nul 2>nul
 if errorlevel 1 (
     echo   Installing dependencies...
     pip install -r requirements.txt -q
-    if errorlevel 1 (
-        echo   [WARN] Some packages failed. The tool may not work correctly.
-    )
 )
 
 echo.
-echo   === TRPG2SKILL v1.0.0-beta ===
+echo   === TRPG2SKILL v1.0.1-beta ===
 echo.
 echo   Starting Web GUI at http://127.0.0.1:8641
 echo.
+timeout /t 1 /nobreak >nul
 start "" "http://127.0.0.1:8641"
 python main.py serve
-if errorlevel 1 pause
+exit /b %ERRORLEVEL%

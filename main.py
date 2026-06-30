@@ -3,13 +3,15 @@ TRPG-to-SKILL — AI驱动的TRPG剧本 → SKILL 自动编译 + 即时运行
 
 用法:
     python main.py compile <世界书.txt> [--output <目录>]   # 编译模式
-    python main.py play <SKILL目录>                          # CLI 游戏模式
-    python main.py serve [--port 8641] [--game <目录>]       # Web 模式 (Phase 7)
+    python main.py serve [--port 8641] [--game <目录>]       # Web 模式 (主要入口)
     python main.py setup                                     # 首次运行: 配置API
+
+CLI play 模式已暂停开发，推荐使用 Web 模式。
 """
 import argparse
 import sys
 import os
+import warnings
 
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
@@ -22,13 +24,14 @@ def cmd_compile(args):
     """编译模式: 世界书 → SKILL 目录"""
     from compiler.pipeline import compile
     input_file = args.input
-    output_dir = args.output or os.path.join(PROJECT_ROOT, "generated", 
+    output_dir = args.output or os.path.join(PROJECT_ROOT, "skills_generated",
                                               os.path.splitext(os.path.basename(input_file))[0])
     compile(input_file, output_dir)
 
 
 def cmd_play(args):
-    """CLI 游戏模式"""
+    """CLI 游戏模式 — 已暂停开发，推荐使用 Web 模式"""
+    print("\n  [注意] CLI 模式已暂停开发。推荐使用 Web 模式: python main.py serve\n")
     from core.config_profiles import create_llm_from_profile
     from runtime.engine import GameEngine
     
@@ -83,21 +86,30 @@ def _handle_cli_command(user_input, engine, gen):
     /debug on|off 切换调试信息
 """)
         user_input = input("\n> ").strip()
-        return engine._process_input(user_input)
+        try:
+            return gen.send(user_input)
+        except StopIteration:
+            return None
     elif user_input.startswith("/config"):
-        return _handle_config(user_input, engine)
+        return _handle_config(user_input, engine, gen)
     elif user_input == "/debug on":
         engine.config["debug"]["show_token_usage"] = True
         engine.config["debug"]["show_lorebook_hits"] = True
         print("  OK 调试信息已开启")
         user_input = input("\n> ").strip()
-        return engine._process_input(user_input)
+        try:
+            return gen.send(user_input)
+        except StopIteration:
+            return None
     elif user_input == "/debug off":
         engine.config["debug"]["show_token_usage"] = False
         engine.config["debug"]["show_lorebook_hits"] = False
         print("  OK 调试信息已关闭")
         user_input = input("\n> ").strip()
-        return engine._process_input(user_input)
+        try:
+            return gen.send(user_input)
+        except StopIteration:
+            return None
     elif user_input == "/status":
         state = engine.state
         print(f"""
@@ -107,12 +119,18 @@ def _handle_cli_command(user_input, engine, gen):
   NPC数: {len(state.npcs)}  库存: {len(state.inventory)} 件
 """)
         user_input = input("\n> ").strip()
-        return engine._process_input(user_input)
+        try:
+            return gen.send(user_input)
+        except StopIteration:
+            return None
     elif user_input == "/summary":
-        engine.memory.force_summary()
+        engine.memory.force_summary(engine.state, engine.llm)
         print("  OK 已生成剧情摘要")
         user_input = input("\n> ").strip()
-        return engine._process_input(user_input)
+        try:
+            return gen.send(user_input)
+        except StopIteration:
+            return None
     elif user_input == "/hotreload":
         changed = engine.hot_reload.poll(engine.lorebook)
         if changed:
@@ -120,14 +138,20 @@ def _handle_cli_command(user_input, engine, gen):
         else:
             print("  (无文件变更)")
         user_input = input("\n> ").strip()
-        return engine._process_input(user_input)
+        try:
+            return gen.send(user_input)
+        except StopIteration:
+            return None
     elif user_input.startswith("/save"):
         parts = user_input.split(maxsplit=1)
         name = parts[1] if len(parts) > 1 else None
         engine.state.save_manual(name)
         print(f"  [已保存]")
         user_input = input("\n> ").strip()
-        return engine._process_input(user_input)
+        try:
+            return gen.send(user_input)
+        except StopIteration:
+            return None
     elif user_input.startswith("/load"):
         parts = user_input.split(maxsplit=1)
         name = parts[1] if len(parts) > 1 else None
@@ -136,13 +160,19 @@ def _handle_cli_command(user_input, engine, gen):
         else:
             print(f"  FAIL 存档不存在")
         user_input = input("\n> ").strip()
-        return engine._process_input(user_input)
+        try:
+            return gen.send(user_input)
+        except StopIteration:
+            return None
     elif user_input == "/saves":
         slots = engine.state.list_saves()
         for s in slots:
             print(f"  {s['name']}  ({s['turn']}轮, {s['date']})")
         user_input = input("\n> ").strip()
-        return engine._process_input(user_input)
+        try:
+            return gen.send(user_input)
+        except StopIteration:
+            return None
     else:
         try:
             return gen.send(user_input)
@@ -150,13 +180,16 @@ def _handle_cli_command(user_input, engine, gen):
             return None
 
 
-def _handle_config(user_input, engine):
+def _handle_config(user_input, engine, gen):
     parts = user_input.split()
     if len(parts) == 1:
         for key, value in engine.config.data.items():
             print(f"  {key} = {value}")
         user_input = input("\n> ").strip()
-        return engine._process_input(user_input)
+        try:
+            return gen.send(user_input)
+        except StopIteration:
+            return None
     elif parts[1] == "set" and len(parts) >= 4:
         key = parts[2]
         value = parts[3]
@@ -166,7 +199,10 @@ def _handle_config(user_input, engine):
         except ValueError as e:
             print(f"  FAIL {e}")
         user_input = input("\n> ").strip()
-        return engine._process_input(user_input)
+        try:
+            return gen.send(user_input)
+        except StopIteration:
+            return None
     else:
         user_input = input("\n> ").strip()
         return engine._process_input(user_input)
@@ -193,7 +229,7 @@ def cmd_setup(args):
     print(f"  OK 已激活配置: {name}")
     print(f"\n  现在可以运行:")
     print(f"    python main.py compile samples/example.txt")
-    print(f"    python main.py play generated/example")
+    print(f"    python main.py play skills_generated/example")
 
 
 def main():
@@ -204,7 +240,7 @@ def main():
     p_compile.add_argument("input", help="世界书文件路径 (.txt / .md)")
     p_compile.add_argument("--output", "-o", help="输出目录")
 
-    p_play = sub.add_parser("play", help="CLI 游戏模式")
+    p_play = sub.add_parser("play", help="CLI 游戏模式 (已暂停开发)")
     p_play.add_argument("game_dir", help="SKILL 目录路径")
 
     p_serve = sub.add_parser("serve", help="Web 模式")

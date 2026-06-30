@@ -185,7 +185,7 @@ class FrontmatterSpec:
     name: str
     trigger_word: str
     description: str = ""
-    version: str = "1.0"
+    version: str = "1.1.0"
 
 
 @dataclass
@@ -266,6 +266,7 @@ class GameState:
     flags: list[str] = field(default_factory=list)
     summaries: list[str] = field(default_factory=list)  # 长对话摘要块
     lorebook_state: dict = field(default_factory=dict)   # 动态条目持久化
+    last_input: str = ""
     created_at: str = ""
     updated_at: str = ""
 
@@ -302,6 +303,7 @@ class GameState:
             "flags": self.flags,
             "summaries": self.summaries,
             "lorebook_state": self.lorebook_state,
+            "last_input": self.last_input,
             "created_at": self.created_at or time.strftime("%Y-%m-%d %H:%M:%S"),
             "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
             "history": [r.to_dict() for r in self.history],
@@ -322,6 +324,7 @@ class GameState:
             flags=d.get("flags", []),
             summaries=d.get("summaries", []),
             lorebook_state=d.get("lorebook_state", {}),
+            last_input=d.get("last_input", ""),
             created_at=d.get("created_at", ""),
             updated_at=d.get("updated_at", ""),
             history=[TurnRecord(**r) if isinstance(r, dict) else r for r in d.get("history", [])],

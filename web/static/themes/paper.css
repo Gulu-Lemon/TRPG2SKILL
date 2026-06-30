@@ -121,3 +121,112 @@ body {
 
 .config-row { border-bottom: 1px solid #e0d8c8; }
 .theme-option { background: #faf7f0; border-color: #c5b8a0; }
+
+#play-header .game-name {
+    color: #5c3a1e;
+    font-family: 'Georgia', serif;
+    font-weight: bold;
+}
+
+.player-msg {
+    background: #8b4513;
+    color: #faf7f0;
+    font-family: 'Georgia', serif;
+    border-radius: 8px 8px 2px 8px;
+}
+.gm-msg {
+    border-color: #c5b8a0;
+    border-radius: 8px 8px 8px 2px;
+    background: #faf7f0;
+    color: #2a2a2a;
+}
+.gm-msg .gm-actions {
+    background: #f5f0e8;
+    border: 1px solid #d5cdc0;
+    border-radius: 3px;
+}
+.gm-msg .gm-actions button {
+    background: #e8dcc8;
+    color: #5c3a1e;
+    border: 1px solid #c5b8a0;
+    font-family: 'Georgia', serif;
+}
+.gm-msg .gm-actions button:hover {
+    color: #8b4513;
+    border-color: #8b4513;
+}
+
+.loading-msg {
+    border-color: #c5b8a0;
+    color: #8b7355;
+    font-family: 'Georgia', serif;
+}
+
+.system-msg {
+    background: #faf7f0;
+    border-left: 2px solid #c5b8a0;
+    color: #5c534a;
+}
+
+#lorebook-panel {
+    background: #faf7f0;
+    border-left: 1px solid #e0d8c8;
+    padding: 12px;
+    overflow-y: auto;
+    width: 260px;
+}
+#lorebook-panel.show {
+    display: block;
+}
+
+#loading-overlay .spinner {
+    border-color: #e0d8c8;
+    border-top-color: #8b4513;
+}
+
+.edit-tab {
+    font-family: 'Georgia', serif;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+}
+.edit-tab.active {
+    color: #5c3a1e;
+    border-bottom-color: #8b4513;
+}
+
+.edit-item {
+    background: #faf7f0;
+    border: 1px solid #e0d8c8;
+}
+
+select.edit-input {
+    background: #fdfbf7;
+    color: #1a1a1a;
+    border: 1px solid #c5b8a0;
+    border-radius: 3px;
+    font-family: 'Georgia', serif;
+}
+
+.game-card {
+    background: #faf7f0;
+    border: 1px solid #d5cdc0;
+}
+.game-card:hover {
+    border-color: #8b4513;
+    background: #f0e8d8;
+}
+
+body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+#narrative-area p { text-indent: 2em; }
+
+body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(500px circle at var(--mx, 50%) var(--my, 50%), rgba(139,69,19,0.03), transparent 70%);
+}

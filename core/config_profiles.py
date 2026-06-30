@@ -5,6 +5,7 @@ API 配置管理 — config_profiles.json 多配置支持
 import json
 import os
 import sys
+import base64
 from typing import Optional
 
 _BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -12,6 +13,20 @@ if getattr(sys, 'frozen', False):
     _BASE = os.path.dirname(sys.executable)
 
 PROFILES_PATH = os.path.join(_BASE, "config_profiles.json")
+
+
+def _encode_key(key: str) -> str:
+    if not key:
+        return ""
+    return base64.b64encode(key.encode()).decode()
+
+def _decode_key(encoded: str) -> str:
+    if not encoded:
+        return ""
+    try:
+        return base64.b64decode(encoded.encode()).decode()
+    except Exception:
+        return encoded
 
 
 def _ensure():
@@ -30,7 +45,7 @@ def get_active() -> dict:
             return {
                 "name": p["name"].strip(),
                 "base_url": p.get("base_url", "").strip(),
-                "api_key": p.get("api_key", "").strip(),
+                "api_key": _decode_key(p.get("api_key", "").strip()),
                 "model": p.get("model", "").strip(),
                 "temperature": p.get("temperature", 1.0),
                 "top_p": p.get("top_p", 0.95),
@@ -70,7 +85,7 @@ def save_profile(name: str, base_url: str, api_key: str, model: str,
                  thinking_mode: bool = False, thinking_budget: int = 0) -> bool:
     name = name.strip()
     base_url = base_url.strip()
-    api_key = api_key.strip()
+    api_key = _encode_key(api_key.strip())
     model = model.strip() or "gpt-3.5-turbo"
     analyzer_model = analyzer_model.strip()
     try: temperature = float(temperature)
@@ -79,6 +94,7 @@ def save_profile(name: str, base_url: str, api_key: str, model: str,
     except (ValueError, TypeError): top_p = 0.95
     try: thinking_budget = int(thinking_budget)
     except (ValueError, TypeError): thinking_budget = 0
+
     _ensure()
     with open(PROFILES_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -155,9 +171,10 @@ def apply_to_llm(llm) -> bool:
 def create_llm_from_profile(use_analyzer: bool = False) -> "LLMClient":
     """从 active profile 创建 LLMClient，便捷工厂函数"""
     from .llm import LLMClient
+    from .errors import ConfigError
     cfg = get_active()
     if not cfg:
-        raise ValueError("没有激活的 API 配置。请先运行设置。")
+        raise ConfigError("没有激活的 API 配置。请先运行设置。")
     client = LLMClient.from_dict(cfg)
     if use_analyzer and cfg.get("analyzer_model", "").strip():
         client.model = cfg["analyzer_model"].strip()

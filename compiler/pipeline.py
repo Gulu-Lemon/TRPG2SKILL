@@ -11,6 +11,7 @@ from compiler.generator import generate
 from compiler.validator import validate
 from core.config_profiles import create_llm_from_profile
 from core.state import SchemaAnalysis
+from core.errors import CompileError
 
 
 def compile(input_file: str, output_dir: str, feedback: str = "",
@@ -38,7 +39,7 @@ def compile(input_file: str, output_dir: str, feedback: str = "",
     llm = create_llm_from_profile(use_analyzer=True)
     import json as _json
 
-    def call_llm(system_prompt, temperature=0.3, messages=None, max_tokens=4096):
+    def call_llm(system_prompt, temperature=0.3, messages=None, max_tokens=4096, required=True):
         try:
             if messages is None:
                 messages = [{"role": "user", "content": full_text}]
@@ -47,6 +48,8 @@ def compile(input_file: str, output_dir: str, feedback: str = "",
                 temperature=temperature, max_tokens=max_tokens,
             )
         except Exception as e:
+            if required:
+                raise CompileError(f"关键 LLM 调用失败: {e}") from e
             print(f"    [WARN] LLM 调用失败: {e}")
             return {}
 
@@ -136,7 +139,7 @@ def compile(input_file: str, output_dir: str, feedback: str = "",
         emit("validate", 70 + round_idx * 10, "校验中...")
         validate_input = full_text + "\n\n## 当前分析结果\n" + analysis_summary
         validation = call_llm(validate_prompt + "\n\n输入数据:\n" + validate_input,
-                             temperature=0.1)
+                             temperature=0.1, required=False)
         if not validation:
             emit("validate", 80, "校验调用失败")
             break
@@ -173,13 +176,13 @@ def compile(input_file: str, output_dir: str, feedback: str = "",
             if phase_id == 1:
                 comprehensive = call_llm(COMPREHENSIVE_PROMPT,
                     messages=[{"role": "user", "content": full_text},
-                              {"role": "user", "content": batch_text}])
+                              {"role": "user", "content": batch_text}], required=False)
                 analysis = comprehensive_to_analysis(comprehensive)
             elif phase_id == 2:
                 tools = call_llm(tools_prompt,
                     messages=[{"role": "user", "content": full_text},
                               {"role": "user", "content": entity_summary},
-                              {"role": "user", "content": batch_text}])
+                              {"role": "user", "content": batch_text}], required=False)
                 analysis.tool_specs = [
                     ts for ts in (tools.get("tool_specs") or []) if isinstance(ts, dict)
                 ]

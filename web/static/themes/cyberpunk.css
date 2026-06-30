@@ -32,6 +32,12 @@ body::after {
     );
 }
 
+body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(500px circle at var(--mx, 50%) var(--my, 50%), rgba(0,255,136,0.04), transparent 70%);
+}
+
 /* ── 霓虹顶栏 ── */
 #topbar {
     background: rgba(10,10,15,0.95);
@@ -185,3 +191,121 @@ body::after {
 
 /* ── 页眉 ── */
 #play-header { border-bottom: 1px solid rgba(0,255,136,0.15); }
+
+#narrative-area {
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--text);
+}
+
+.player-msg {
+    background: rgba(0,255,136,0.15);
+    color: var(--accent);
+    border: 1px solid rgba(0,255,136,0.3);
+    border-radius: 2px 8px 2px 8px;
+    font-family: var(--font);
+    box-shadow: 0 0 8px rgba(0,255,136,0.1);
+}
+
+.gm-msg {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(0,255,136,0.15);
+    border-radius: 8px 2px 8px 2px;
+    color: var(--text);
+}
+.gm-msg .gm-actions {
+    background: rgba(10,10,15,0.95);
+    border: 1px solid rgba(0,255,136,0.2);
+    border-radius: 2px;
+}
+.gm-msg .gm-actions button {
+    background: rgba(0,255,136,0.08);
+    color: var(--text2);
+    border: 1px solid rgba(0,255,136,0.15);
+    font-family: var(--font);
+}
+.gm-msg .gm-actions button:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.loading-msg {
+    border-color: rgba(0,255,136,0.15);
+    color: var(--text2);
+    font-family: var(--font);
+}
+
+#lorebook-panel {
+    background: rgba(5,5,16,0.95);
+    border-left: 1px solid rgba(0,255,136,0.15);
+    padding: 12px;
+    overflow-y: auto;
+    width: 260px;
+}
+#lorebook-panel.show {
+    display: block;
+}
+
+.edit-tab {
+    font-family: var(--font);
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+}
+.edit-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    text-shadow: 0 0 6px rgba(0,255,136,0.3);
+}
+
+.edit-item {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(0,255,136,0.08);
+}
+
+select.edit-input {
+    background: rgba(0,0,0,0.6);
+    color: var(--text);
+    border: 1px solid rgba(0,255,136,0.2);
+    border-radius: 2px;
+    font-family: var(--font);
+}
+
+.game-card {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(0,255,136,0.08);
+}
+.game-card:hover {
+    border-color: var(--accent);
+    background: rgba(0,255,136,0.05);
+    box-shadow: 0 0 8px rgba(0,255,136,0.08);
+}
+
+#play-header .game-name:hover, .settings-section h3:hover {
+    text-shadow:
+        -1px 0 0 rgba(255,0,60,0.6),
+        1px 0 0 rgba(0,200,255,0.6);
+    transition: text-shadow 0.2s;
+}
+
+.loading-msg::after {
+    content: '\258C';
+    display: inline-block;
+    margin-left: 2px;
+    animation: cursorBlink 1s steps(2) infinite;
+    color: var(--accent);
+}
+@keyframes cursorBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+.settings-section {
+    box-shadow: 0 0 20px rgba(0,255,136,0.03), inset 0 0 40px rgba(0,255,136,0.02),
+                0 0 2px rgba(0,255,136,0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .loading-msg::after { animation: none; }
+    .settings-section h3:hover { text-shadow: none; }
+}

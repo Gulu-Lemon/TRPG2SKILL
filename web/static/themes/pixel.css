@@ -1,0 +1,368 @@
+/* TRPG-to-SKILL — 像素主题 (Pixel Art / 8-bit Retro) */
+:root {
+    --bg: #202830;
+    --bg2: #384050;
+    --bg3: #506070;
+    --accent: #FFB000;
+    --accent2: #7090A0;
+    --text: #F8F0D0;
+    --text2: #A09880;
+    --green: #50B050;
+    --yellow: #FFD030;
+    --red: #E05050;
+    --panel-bg: #283040;
+    --border: #405060;
+    --font: 'Courier New', 'Consolas', monospace;
+    --overlay-bg: rgba(0,0,0,0.6);
+    --loading-bg: rgba(32,40,48,0.95);
+    --btn-text: #202830;
+    --danger-hover: #c04040;
+}
+
+* {
+    image-rendering: auto;
+}
+
+body {
+    background: var(--bg);
+}
+
+#topbar {
+    background: var(--bg2);
+    border-bottom: 4px solid var(--border);
+    box-shadow: none;
+}
+#topbar .logo {
+    color: var(--accent);
+    font-family: var(--font);
+    font-weight: bold;
+    text-shadow: none;
+}
+#topbar .tab-btn {
+    color: var(--text2);
+    font-family: var(--font);
+    border-radius: 0;
+    border: 4px solid transparent;
+    transition: none;
+}
+#topbar .tab-btn:hover {
+    color: var(--accent);
+}
+#topbar .tab-btn.active {
+    background: var(--bg3);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.settings-section {
+    background: var(--bg2);
+    border: 4px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 0;
+    box-shadow: 4px 4px 0 0 rgba(0,0,0,0.4);
+}
+.settings-section h3 {
+    color: var(--accent);
+    font-family: var(--font);
+    text-transform: uppercase;
+    border-bottom: 4px solid var(--border);
+    text-shadow: none;
+}
+
+#narrative-area {
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+}
+
+#player-input, #compile-input, #compile-name, .profile-form input {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    border: 4px solid var(--border);
+    border-radius: 0;
+    transition: none;
+}
+#player-input:focus, #compile-input:focus {
+    border-color: var(--accent);
+    box-shadow: none;
+    outline: none;
+}
+
+.btn-icon {
+    font-family: var(--font);
+    color: var(--text);
+    background: var(--bg2);
+    border: 4px solid var(--border);
+    border-radius: 0;
+    cursor: pointer;
+    transition: none;
+    box-shadow: 4px 4px 0 0 rgba(0,0,0,0.3);
+}
+.btn-icon:hover {
+    background: var(--bg3);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 4px 4px 0 0 rgba(0,0,0,0.5);
+}
+.btn-icon:active {
+    box-shadow: none;
+    transform: translate(4px, 4px);
+}
+.btn-icon.btn-danger {
+    background: rgba(224,80,80,0.15);
+    border-color: rgba(224,80,80,0.4);
+    color: var(--red);
+}
+.btn-icon.btn-danger:hover {
+    background: rgba(224,80,80,0.25);
+    border-color: var(--red);
+}
+
+#compile-submit, #send-btn {
+    background: var(--accent);
+    color: var(--btn-text);
+    font-family: var(--font);
+    font-weight: bold;
+    border: 4px solid #D09000;
+    border-radius: 0;
+    box-shadow: 4px 4px 0 0 rgba(0,0,0,0.4);
+    text-transform: uppercase;
+    transition: none;
+}
+#compile-submit:hover, #send-btn:hover {
+    background: #FFC020;
+    border-color: #B08000;
+    box-shadow: 4px 4px 0 0 rgba(0,0,0,0.5);
+}
+#compile-submit:active, #send-btn:active {
+    box-shadow: none;
+    transform: translate(4px, 4px);
+}
+
+.lorebook-entry {
+    padding: 10px 12px; margin-bottom: 6px;
+    background: var(--bg2);
+    border: 4px solid var(--border);
+    border-radius: 0; cursor: pointer;
+    box-shadow: 3px 3px 0 0 rgba(0,0,0,0.3);
+    transition: none;
+}
+.lorebook-entry:hover {
+    border-color: var(--accent);
+    box-shadow: 4px 4px 0 0 rgba(0,0,0,0.4);
+}
+.lorebook-entry .le-title {
+    color: var(--accent);
+    font-family: var(--font);
+}
+
+.slot-item {
+    padding: 10px; margin-bottom: 6px;
+    background: var(--bg2);
+    border: 4px solid var(--border);
+    border-radius: 0;
+}
+
+.panel-drawer {
+    background: var(--bg2);
+    border-left: 4px solid var(--border);
+    box-shadow: -4px 0 0 0 rgba(0,0,0,0.3);
+}
+
+#progress-bar {
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.theme-option {
+    background: var(--bg2);
+    font-family: var(--font);
+    border: 4px solid var(--border);
+    border-radius: 0;
+    color: var(--text2);
+}
+.theme-option:hover {
+    border-color: var(--accent);
+}
+.theme-option.active {
+    background: rgba(255,176,0,0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+#input-row {
+    background: var(--bg2);
+    border-top: 4px solid var(--border);
+    padding: 12px 0 0 0;
+    margin-top: 6px;
+}
+
+#play-header {
+    border-bottom: 4px solid var(--border);
+    padding-bottom: 10px;
+}
+#play-header .game-name {
+    color: var(--accent);
+    font-family: var(--font);
+    font-weight: bold;
+}
+
+.player-msg {
+    background: var(--accent);
+    color: var(--btn-text);
+    font-family: var(--font);
+    border: 4px solid #D09000;
+    border-radius: 0;
+    box-shadow: 3px 3px 0 0 rgba(0,0,0,0.3);
+}
+.gm-msg {
+    background: var(--bg2);
+    border: 4px solid var(--border);
+    border-radius: 0;
+    box-shadow: 3px 3px 0 0 rgba(0,0,0,0.3);
+}
+.gm-msg .gm-actions {
+    background: var(--bg);
+    border: 4px solid var(--border);
+    border-radius: 0;
+}
+.gm-msg .gm-actions button {
+    background: var(--bg3);
+    color: var(--text);
+    font-family: var(--font);
+    border: 4px solid var(--border);
+    border-radius: 0;
+}
+.gm-msg .gm-actions button:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.loading-msg {
+    font-family: var(--font);
+    border: 4px dashed var(--border);
+    color: var(--text2);
+}
+
+.system-msg {
+    background: var(--bg2);
+    border-left: 4px solid var(--accent);
+    border-radius: 0;
+    font-family: var(--font);
+}
+
+.config-row {
+    border-bottom: 4px solid var(--border);
+}
+.config-row label {
+    color: var(--text2);
+    font-family: var(--font);
+}
+
+.edit-tab {
+    font-family: var(--font);
+    border-bottom: 4px solid transparent;
+    transition: none;
+}
+.edit-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.edit-item {
+    background: var(--bg2);
+    border: 4px solid var(--border);
+    border-radius: 0;
+    box-shadow: 3px 3px 0 0 rgba(0,0,0,0.3);
+}
+
+.game-card {
+    background: var(--bg2);
+    border: 4px solid var(--border);
+    border-radius: 0;
+    box-shadow: 3px 3px 0 0 rgba(0,0,0,0.3);
+}
+.game-card:hover {
+    border-color: var(--accent);
+    box-shadow: 4px 4px 0 0 rgba(0,0,0,0.4);
+}
+
+#lorebook-panel {
+    background: var(--bg2);
+    border-left: 4px solid var(--border);
+    padding: 12px;
+    overflow-y: auto;
+    width: 260px;
+}
+#lorebook-panel.show { display: block; }
+
+#loading-overlay .spinner {
+    border: 4px solid var(--border);
+    border-top: 4px solid var(--accent);
+    border-radius: 0;
+    animation: pixelSpin 0.8s steps(8) infinite;
+}
+@keyframes pixelSpin {
+    to { transform: rotate(360deg); }
+}
+
+select.edit-input {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    border: 4px solid var(--border);
+    border-radius: 0;
+}
+
+#narrative-area::after {
+    content: '\2588';
+    display: inline-block;
+    margin-left: 1px;
+    animation: pixelBlink 0.8s steps(2) infinite;
+    color: var(--accent);
+    font-size: 14px;
+    vertical-align: middle;
+}
+@keyframes pixelBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+#topbar .logo {
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+}
+#topbar .logo::after {
+    content: '';
+    position: absolute; left: 0; top: 0; right: 0; bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
+    opacity: 0;
+    animation: pixelShimmer 3s steps(6) infinite;
+}
+@keyframes pixelShimmer {
+    0%, 100% { opacity: 0; transform: translateX(-100%); }
+    50% { opacity: 0.08; transform: translateX(100%); }
+}
+
+.lorebook-entry, .game-card, .edit-item, .slot-item {
+    transition: none;
+}
+.lorebook-entry:hover, .game-card:hover, .edit-item:hover, .slot-item:hover {
+    transition: none;
+    transform: translate(1px, 1px);
+    box-shadow: 2px 2px 0 0 rgba(0,0,0,0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #narrative-area::after { animation: none; opacity: 0; }
+    #topbar .logo::after { animation: none; opacity: 0; }
+}
+
+body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(400px circle at var(--mx, 50%) var(--my, 50%), rgba(255,176,0,0.05), transparent 70%);
+}

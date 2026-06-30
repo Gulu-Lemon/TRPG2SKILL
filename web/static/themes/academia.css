@@ -1,0 +1,321 @@
+/* TRPG-to-SKILL — 古籍主题 (Academia / Scholarly) */
+:root {
+    --bg: #1C1714;
+    --bg2: #251E19;
+    --bg3: #3D332B;
+    --accent: #C9A962;
+    --accent2: #8B2635;
+    --text: #E8DFD4;
+    --text2: #9C8B7A;
+    --green: #5A7D3A;
+    --yellow: #C9A34A;
+    --red: #8B2635;
+    --panel-bg: #1F1815;
+    --border: #3A3028;
+    --font: 'Crimson Pro', 'Georgia', 'Noto Serif SC', 'SimSun', serif;
+    --overlay-bg: rgba(16,10,6,0.6);
+    --loading-bg: rgba(28,23,20,0.95);
+    --btn-text: #1C1714;
+    --danger-hover: #6e1e2a;
+}
+
+body {
+    background:
+        radial-gradient(ellipse 60% 50% at 50% 20%, rgba(201,169,98,0.06), transparent),
+        radial-gradient(ellipse 100% 80% at 50% 50%, transparent 40%, rgba(16,10,6,0.5) 100%),
+        #1C1714;
+    background-attachment: fixed;
+}
+
+#topbar {
+    background: rgba(31,24,21,0.95);
+    border-bottom: 2px solid #3A3028;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+#topbar .logo {
+    color: var(--accent);
+    font-family: var(--font);
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+#topbar .tab-btn {
+    color: var(--text2);
+    font-family: var(--font);
+    border-radius: 2px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.25s, border-color 0.25s;
+}
+#topbar .tab-btn:hover { color: var(--accent); }
+#topbar .tab-btn.active {
+    background: transparent;
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+#center-panel { background: transparent; }
+.tab-content.active { background: transparent; }
+#play-tab { background: transparent; }
+
+.settings-section {
+    background: rgba(37,30,25,0.7);
+    border: 1px solid #3A3028;
+    border-left: 3px solid var(--accent);
+    border-radius: 2px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(201,169,98,0.06);
+}
+.settings-section h3 {
+    color: var(--accent);
+    font-family: var(--font);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 13px;
+    border-bottom-color: #3A3028;
+}
+
+#narrative-area {
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.9;
+    color: #E8DFD4;
+    padding: 16px 8px;
+}
+#narrative-area p {
+    text-indent: 2em;
+    margin-bottom: 14px;
+}
+
+#player-input, #compile-input, #compile-name, .profile-form input {
+    background: rgba(20,16,12,0.6);
+    color: var(--text);
+    border: 1px solid #3A3028;
+    border-radius: 2px;
+    font-family: var(--font);
+    transition: border-color 0.25s, box-shadow 0.25s;
+}
+#player-input:focus, #compile-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 8px rgba(201,169,98,0.15), inset 0 0 8px rgba(201,169,98,0.04);
+    outline: none;
+}
+
+.btn-icon {
+    background: rgba(201,169,98,0.08);
+    color: var(--text);
+    border: 1px solid #3A3028;
+    border-radius: 2px;
+    font-family: var(--font);
+    font-size: 13px;
+    transition: background 0.25s, border-color 0.25s, color 0.25s;
+}
+.btn-icon:hover {
+    background: rgba(201,169,98,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.btn-icon.btn-danger {
+    background: rgba(139,38,53,0.15);
+    border-color: rgba(139,38,53,0.3);
+    color: var(--red);
+}
+.btn-icon.btn-danger:hover {
+    background: rgba(139,38,53,0.25);
+    border-color: var(--red);
+}
+
+#compile-submit, #send-btn {
+    background: #3D332B;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+    font-family: var(--font);
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: background 0.25s, box-shadow 0.25s;
+}
+#compile-submit:hover, #send-btn:hover {
+    background: rgba(201,169,98,0.15);
+    box-shadow: 0 0 12px rgba(201,169,98,0.15);
+}
+
+.lorebook-entry {
+    padding: 10px 12px; margin-bottom: 6px;
+    background: rgba(37,30,25,0.5);
+    border: 1px solid #3A3028;
+    border-radius: 2px; cursor: pointer;
+    transition: background 0.25s, border-color 0.25s;
+}
+.lorebook-entry:hover {
+    background: rgba(37,30,25,0.8);
+    border-color: var(--accent);
+}
+.lorebook-entry .le-title {
+    color: var(--accent);
+    font-family: var(--font);
+    font-weight: 600;
+}
+
+.slot-item {
+    padding: 10px; margin-bottom: 6px;
+    background: rgba(37,30,25,0.5);
+    border: 1px solid #3A3028;
+    border-radius: 2px;
+}
+
+.panel-drawer {
+    background: rgba(28,23,20,0.97);
+    border-left: 2px solid #3A3028;
+    box-shadow: -4px 0 30px rgba(0,0,0,0.4);
+}
+
+#progress-bar {
+    border-radius: 2px;
+    box-shadow: 0 0 8px rgba(201,169,98,0.3);
+}
+
+.theme-option {
+    background: rgba(37,30,25,0.4);
+    border: 1px solid #3A3028;
+    border-radius: 2px;
+    color: var(--text2);
+    font-family: var(--font);
+}
+.theme-option:hover { border-color: var(--accent); }
+.theme-option.active {
+    background: rgba(201,169,98,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+#input-row {
+    background: rgba(28,23,20,0.7);
+    border-top: 1px solid #3A3028;
+    padding: 14px 0 0 0;
+    margin-top: 8px;
+}
+
+#play-header {
+    border-bottom: 2px solid #3A3028;
+    padding-bottom: 12px;
+}
+#play-header .game-name {
+    color: var(--accent);
+    font-family: var(--font);
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.player-msg {
+    background: #3D332B;
+    color: var(--accent);
+    border: 1px solid rgba(201,169,98,0.25);
+    border-radius: 8px 8px 2px 8px;
+    font-family: var(--font);
+}
+.gm-msg {
+    border-color: #3A3028;
+    border-radius: 8px 8px 8px 2px;
+    background: rgba(37,30,25,0.4);
+}
+.gm-msg .gm-actions {
+    background: rgba(28,23,20,0.95);
+    border: 1px solid #3A3028;
+    border-radius: 2px;
+}
+.gm-msg .gm-actions button {
+    background: rgba(201,169,98,0.08);
+    color: var(--text2);
+    border: 1px solid #3A3028;
+    border-radius: 2px;
+    font-family: var(--font);
+}
+.gm-msg .gm-actions button:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.loading-msg {
+    border-color: #3A3028;
+    color: var(--text2);
+    font-family: var(--font);
+}
+
+.system-msg {
+    background: rgba(37,30,25,0.4);
+    border-left: 2px solid var(--accent);
+    color: var(--text2);
+}
+
+.config-row {
+    border-bottom: 1px solid #3A3028;
+}
+.config-row label {
+    color: var(--text2);
+    font-family: var(--font);
+}
+
+.edit-tab {
+    font-family: var(--font);
+    border-bottom: 2px solid transparent;
+    transition: color 0.25s, border-color 0.25s;
+}
+.edit-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.edit-item {
+    background: rgba(37,30,25,0.5);
+    border: 1px solid #3A3028;
+    border-radius: 2px;
+}
+
+.game-card {
+    background: rgba(37,30,25,0.5);
+    border: 1px solid #3A3028;
+    border-radius: 2px;
+}
+.game-card:hover {
+    border-color: var(--accent);
+    background: rgba(37,30,25,0.8);
+}
+
+#lorebook-panel {
+    background: rgba(31,24,21,0.95);
+    border-left: 2px solid #3A3028;
+    padding: 12px;
+    overflow-y: auto;
+    width: 260px;
+}
+#lorebook-panel.show {
+    display: block;
+}
+
+#loading-overlay .spinner {
+    border-color: #3A3028;
+    border-top-color: var(--accent);
+}
+
+select.edit-input {
+    background: rgba(20,16,12,0.6);
+    color: var(--text);
+    border: 1px solid #3A3028;
+    border-radius: 2px;
+    font-family: var(--font);
+}
+
+body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    opacity: 0.02;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+#narrative-area p { text-indent: 2em; }
+}
+
+body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(500px circle at var(--mx, 50%) var(--my, 50%), rgba(201,169,98,0.04), transparent 70%);
+}

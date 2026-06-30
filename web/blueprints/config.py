@@ -89,6 +89,25 @@ def game_config_update():
     return {"ok": True}
 
 
+@config_bp.route("/shutdown", methods=["POST"])
+def server_shutdown():
+    """关闭服务器：保存游戏后终止进程。
+
+    先调 _cleanup 保存游戏状态，再用 os._exit 硬终止进程
+    （绕过所有 Flask/Werkzeug 异常处理，确保服务器立即停止）。
+    """
+    import os as _os
+    import traceback
+    try:
+        from web.server import _cleanup
+        _cleanup()
+    except Exception:
+        traceback.print_exc()
+    finally:
+        print("\n  Server shutdown via web button.", flush=True)
+        _os._exit(0)
+
+
 @config_bp.route("/game/reset", methods=["POST"])
 def game_config_reset():
     from web.blueprints.play import _engine
@@ -98,12 +117,3 @@ def game_config_reset():
     return {"ok": True}
 
 
-@config_bp.route("/shutdown", methods=["GET"])
-def shutdown():
-    """优雅关闭服务器: 保存状态, 关闭连接, 退出进程"""
-    import os as _os
-    from web.blueprints.play import _engine, _engine_lock
-    with _engine_lock:
-        if _engine:
-            _engine.shutdown()
-    _os._exit(0)

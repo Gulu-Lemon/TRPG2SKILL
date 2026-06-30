@@ -74,7 +74,8 @@ class LorebookIndex:
                 self.forward[key_lower].add(entry.id)
                 self.reverse[entry.id].add(key_lower)
 
-        self.automaton.make_automaton()
+        if self.forward:
+            self.automaton.make_automaton()
 
     def _build_fallback(self):
         """无 pyahocorasick 时的纯 Python 回退"""
@@ -91,37 +92,37 @@ class LorebookIndex:
                 self.reverse[entry.id].add(key_lower)
 
     def scan(self, text: str) -> dict[str, int]:
-        """
-        扫描文本，返回 {entry_id: hit_count}。
-        单字 key 自动惩罚。
-        """
-        if not self._built:
+        """扫描文本，返回 {entry_id: hit_count}。"""
+        if not self._built or not self.forward:
+            return {}
+        if not text:
             return {}
 
         text_lower = text.lower()
         raw_hits: dict[str, int] = defaultdict(int)
 
         if self.automaton is not None:
-            for end_idx, entry_ids in self.automaton.iter(text_lower):
-                for eid in entry_ids:
-                    raw_hits[eid] += 1
+            try:
+                for end_idx, entry_ids in self.automaton.iter(text_lower):
+                    for eid in entry_ids:
+                        raw_hits[eid] += 1
+            except AttributeError:
+                pass  # 自动机未正确构建（无关键词）
         else:
             for key_lower, eid in self._keyword_list:
                 count = text_lower.count(key_lower)
                 if count > 0:
                     raw_hits[eid] += count
 
-        return self._resolve_ambiguity(raw_hits)
+        return self._resolve_ambiguity(raw_hits, text_lower)
 
-    def _resolve_ambiguity(self, raw_hits: dict[str, int], 
+    def _resolve_ambiguity(self, raw_hits: dict[str, int], original_text: str = "",
                            single_char_penalty: float = 0.3) -> dict[str, int]:
-        """
-        歧义消解:
-        - L1: Aho-Corasick 最长匹配优先（内建）
-        - L2: 单字 key 命中衰减
-        - L3: 多字 key 共现增强
-        """
+        """消解歧义。单字惩罚 + 多字共现增强。"""
+        if not raw_hits or not self.entries:
+            return {}
         resolved: dict[str, int] = {}
+        text_lower = original_text.lower()
         for eid, count in raw_hits.items():
             if eid not in self.entries:
                 continue
@@ -135,7 +136,7 @@ class LorebookIndex:
 
             # L3: 共现增强（如果有两个以上多字 key 同时命中）
             multi_char_hits = sum(
-                1 for k in keys if len(k) >= 2 and k in str(raw_hits).lower()
+                1 for k in keys if len(k) >= 2 and k in text_lower
             )
             if multi_char_hits >= 2:
                 score *= 1.5
@@ -162,10 +163,14 @@ class LorebookIndex:
             self.reverse[entry.id].add(key_lower)
 
             if self.automaton is not None:
-                if key_lower in self.automaton:
-                    existing = self.automaton.get(key_lower, set())
-                    existing.add(entry.id)
-                    self.automaton.add_word(key_lower, existing)
-                else:
-                    self.automaton.add_word(key_lower, {entry.id})
-                self.automaton.make_automaton()
+                try:
+                    if key_lower in self.automaton:
+                        existing = self.automaton.get(key_lower, set())
+                        existing.add(entry.id)
+                        self.automaton.add_word(key_lower, existing)
+                    else:
+                        self.automaton.add_word(key_lower, {entry.id})
+                    if self.forward:
+                        self.automaton.make_automaton()
+                except AttributeError:
+                    pass

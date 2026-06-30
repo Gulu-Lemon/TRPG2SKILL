@@ -87,11 +87,9 @@ class MemoryManager:
             self.lorebook.generate_summary_entry(summary, keys, turn_range)
 
     def force_summary(self, state: GameState, llm: LLMClient):
-        saved = self.summary_interval
-        setattr(self.__class__, 'summary_interval',
-                property(lambda s: 1))
+        old = self.config.get("memory", {}).get("summary_interval_rounds", 30)
+        self.config.setdefault("memory", {})["summary_interval_rounds"] = 1
         try:
             self.maybe_generate_summary(state, llm)
         finally:
-            setattr(self.__class__, 'summary_interval',
-                    property(lambda s: saved))
+            self.config["memory"]["summary_interval_rounds"] = old

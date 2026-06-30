@@ -57,3 +57,161 @@
 .panel-drawer {
     box-shadow: -2px 0 20px rgba(0,0,0,0.8);
 }
+
+#compile-submit, #send-btn {
+    background: #1a1a1a;
+    color: var(--accent);
+    border: 1px solid #333;
+    border-radius: 4px;
+    transition: background 0.2s, border-color 0.2s;
+}
+#compile-submit:hover, #send-btn:hover {
+    background: #222;
+    border-color: var(--accent);
+}
+
+#input-row {
+    border-top: 1px solid #111;
+    padding: 12px 0 0 0;
+    margin-top: 4px;
+}
+
+#play-header {
+    border-bottom: 1px solid #111;
+    padding-bottom: 10px;
+}
+#play-header .game-name {
+    color: var(--accent);
+    font-weight: bold;
+}
+
+#narrative-area {
+    line-height: 1.75;
+    font-size: 15px;
+}
+
+.player-msg {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 12px 12px 4px 12px;
+}
+.gm-msg {
+    border-color: #1a1a1a;
+    background: transparent;
+}
+.gm-msg .gm-actions {
+    background: #0a0a0a;
+}
+.gm-msg .gm-actions button {
+    background: #111;
+    color: var(--text2);
+    border: 1px solid #1a1a1a;
+}
+.gm-msg .gm-actions button:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.loading-msg {
+    border-color: #1a1a1a;
+    color: var(--text2);
+}
+
+.system-msg {
+    background: #080808;
+    color: var(--text2);
+    border-left: 2px solid #1a1a1a;
+}
+
+.config-row {
+    border-bottom: 1px solid #111;
+}
+.config-row label {
+    color: var(--text2);
+}
+
+.theme-option {
+    background: #080808;
+    border: 1px solid #111;
+    border-radius: 4px;
+    color: var(--text2);
+}
+.theme-option:hover {
+    border-color: #333;
+}
+.theme-option.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(255,107,107,0.08);
+}
+
+.edit-tab {
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+}
+.edit-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.edit-item {
+    background: #080808;
+    border: 1px solid #111;
+}
+
+select.edit-input {
+    background: #0a0a0a;
+    color: var(--text);
+    border: 1px solid #1a1a1a;
+    border-radius: 4px;
+}
+
+.game-card {
+    background: #0a0a0a;
+    border: 1px solid #111;
+}
+.game-card:hover {
+    border-color: var(--accent);
+    background: #111;
+}
+
+#lorebook-panel {
+    background: #050505;
+    border-left: 1px solid #111;
+}
+#lorebook-panel.show {
+    display: block;
+}
+
+#loading-overlay .spinner {
+    border-color: #1a1a1a;
+    border-top-color: var(--accent);
+}
+
+#topbar .logo, #play-header .game-name {
+    text-shadow: 0 0 6px rgba(255,107,107,0.25);
+}
+
+@keyframes oledPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+#progress-bar {
+    animation: oledPulse 2.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    #progress-bar { animation: none; }
+}
+
+select.edit-input {
+    background: #0a0a0a;
+    color: var(--text);
+    border: 1px solid #1a1a1a;
+    border-radius: 4px;
+}
+
+body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(500px circle at var(--mx, 50%) var(--my, 50%), rgba(255,107,107,0.04), transparent 70%);
+}
