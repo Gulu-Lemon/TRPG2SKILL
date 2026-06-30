@@ -4,6 +4,7 @@ generated_tmp/
 logs/
 issues/
 autoplay/
+scripts/
 *.pyc
 __pycache__/
 *.spec
